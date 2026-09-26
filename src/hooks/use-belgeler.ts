@@ -87,6 +87,26 @@ export function useBelgeler() {
     }
   }, []);
 
+  // Seçilen dosyayı diske kaydet ve tam dosya yolunu al
+  const uploadDocumentFile = useCallback(async (file: File) => {
+    const fileData = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+    const filePath = await callBackend<string>('save_document_file', {
+      file_name: file.name,
+      file_data: fileData,
+    });
+    return filePath;
+  }, []);
+
+  // Kayıtlı bir belgeyi varsayılan uygulamada aç
+  const openDocumentFile = useCallback(async (filePath: string) => {
+    await callBackend('open_document_file', { file_path: filePath });
+  }, []);
+
   // Belge sil
   const deleteDocument = useCallback(async (id: string) => {
     setLoading(true);
@@ -113,5 +133,7 @@ export function useBelgeler() {
     createDocument,
     updateDocument,
     deleteDocument,
+    uploadDocumentFile,
+    openDocumentFile,
   };
 }

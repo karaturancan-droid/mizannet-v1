@@ -28,12 +28,24 @@ export function ProductForm({
     sku: initialData?.sku || '',
     category: initialData?.category || '',
     unit: initialData?.unit || '',
-    purchase_price: initialData?.purchase_price?.toString() || '',
-    sale_price: initialData?.sale_price?.toString() || '',
-    min_stock: initialData?.min_stock?.toString() || '',
-    current_stock: initialData?.current_stock?.toString() || '',
+    purchase_price: initialData?.purchase_price?.toString() || '0',
+    sale_price: initialData?.sale_price?.toString() || '0',
+    min_stock: initialData?.min_stock?.toString() || '0',
+    current_stock: initialData?.current_stock?.toString() || '0',
     supplier: initialData?.supplier || '',
+    image_path: initialData?.image_path || '',
   });
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData((prev) => ({ ...prev, image_path: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,10 +56,11 @@ export function ProductForm({
         category: formData.category || undefined,
         unit: formData.unit || undefined,
         purchase_price: parseTurkishNumber(formData.purchase_price),
-        sale_price: parseTurkishNumber(formData.sale_price),
-        min_stock: parseInt(formData.min_stock) || 0,
+        sale_price: 0, // Not used, default to 0
+        min_stock: parseFloat(formData.min_stock as string) || 0,
         current_stock: parseInt(formData.current_stock) || 0,
         supplier: formData.supplier || undefined,
+        image_path: formData.image_path || undefined,
       });
       onOpenChange(false);
     } catch (err) {
@@ -117,29 +130,23 @@ export function ProductForm({
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="purchase_price">Alış Fiyatı (₺) *</Label>
-              <Input
-                id="purchase_price"
-                type="text"
-                value={formData.purchase_price}
-                onChange={(e) => setFormData({ ...formData, purchase_price: e.target.value })}
-                placeholder="0,00"
-                required
-                disabled={loading}
-              />
-            </div>
-            <div>
-              <Label htmlFor="sale_price">Satış Fiyatı (₺) *</Label>
-              <Input
-                id="sale_price"
-                type="text"
-                value={formData.sale_price}
-                onChange={(e) => setFormData({ ...formData, sale_price: e.target.value })}
-                placeholder="0,00"
-                required
-                disabled={loading}
-              />
+            <div className="col-span-2">
+              <Label>Ürün Görseli</Label>
+              <div className="mt-2 flex items-center gap-4">
+                {formData.image_path && (
+                  <img
+                    src={formData.image_path.startsWith('data:') ? formData.image_path : `file://${formData.image_path}`}
+                    alt="Preview"
+                    className="w-16 h-16 object-cover rounded border"
+                  />
+                )}
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  disabled={loading}
+                />
+              </div>
             </div>
           </div>
 

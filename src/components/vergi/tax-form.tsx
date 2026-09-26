@@ -1,11 +1,13 @@
 'use client';
 
+import { open as openDialog } from '@tauri-apps/plugin-dialog';
+
 import { useState, useEffect } from 'react';
 import { TaxItem } from '@/hooks/use-vergi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
@@ -15,6 +17,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { useToast } from '@/components/ui/toast';
 
 interface TaxFormProps {
   open: boolean;
@@ -47,6 +50,7 @@ export function TaxForm({
   initialData,
   isLoading,
 }: TaxFormProps) {
+  const { addToast } = useToast();
   const [formData, setFormData] = useState({
     type: '',
     period: '',
@@ -82,7 +86,7 @@ export function TaxForm({
     e.preventDefault();
 
     if (!formData.type || !formData.amount || !formData.due_date) {
-      alert('Lütfen zorunlu alanları doldurunuz.');
+      addToast({ title: 'Lütfen zorunlu alanları doldurunuz.', variant: 'destructive' });
       return;
     }
 
@@ -122,12 +126,16 @@ export function TaxForm({
                 setFormData((prev) => ({ ...prev, type: value }))
               }
             >
-              <option value="">Seçiniz</option>
-              {TAX_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
+              <SelectTrigger>
+                <SelectValue placeholder="Seçiniz" />
+              </SelectTrigger>
+              <SelectContent>
+                {TAX_TYPES.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           </div>
 
@@ -183,14 +191,40 @@ export function TaxForm({
 
           <div className="space-y-2">
             <Label htmlFor="receipt_path">Makbuz Dosya Yolu</Label>
-            <Input
-              id="receipt_path"
-              placeholder="/path/to/receipt.pdf"
-              value={formData.receipt_path}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, receipt_path: e.target.value }))
-              }
-            />
+            <div className="flex gap-2">
+              <Input
+                id="receipt_path"
+                placeholder="/path/to/receipt.pdf"
+                value={formData.receipt_path}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, receipt_path: e.target.value }))
+                }
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    const selected = await openDialog({
+                      multiple: false,
+                      directory: false,
+                      filters: [{
+                        name: 'Makbuz Dosyaları',
+                        extensions: ['pdf', 'png', 'jpg', 'jpeg']
+                      }]
+                    });
+                    if (selected && typeof selected === 'string') {
+                      setFormData(prev => ({ ...prev, receipt_path: selected }));
+                    }
+                  } catch (err) {
+                    console.error("Dosya seçilemedi:", err);
+                  }
+                }}
+              >
+                Gözat
+              </Button>
+            </div>
           </div>
 
           <DialogFooter>

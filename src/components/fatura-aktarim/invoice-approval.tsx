@@ -5,8 +5,8 @@ import { formatCurrencyTRY, formatDateTR } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Loader2, CheckCircle, XCircle } from 'lucide-react';
-import { useState } from 'react';
+import { Loader2, CheckCircle, XCircle, Sparkles } from 'lucide-react';
+import { useState, useMemo } from 'react';
 
 interface InvoiceApprovalProps {
   invoice: Invoice;
@@ -44,6 +44,20 @@ export function InvoiceApproval({
     await onReject();
   };
 
+  const rawData = useMemo(() => {
+    try {
+      return invoice.raw_data ? JSON.parse(invoice.raw_data) : {};
+    } catch {
+      return {};
+    }
+  }, [invoice.raw_data]);
+
+  const moduleName = rawData.module === 'cari' ? 'Cari Hesap (Alacak/Borç)' : 
+                     rawData.module === 'arac' ? 'Araç Gideri' : 
+                     rawData.module === 'depo' ? 'Depo / Stok Girişi' : 
+                     rawData.module === 'vergi' ? 'Vergi / SGK' : 
+                     rawData.module === 'isci' ? 'İşçi Maaş / Avans' : 'Bilinmiyor';
+
   return (
     <>
       <Card>
@@ -51,6 +65,20 @@ export function InvoiceApproval({
           <CardTitle>Adım 3: Faturayı Onayla</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
+          {rawData.module && (
+            <div className="rounded-lg bg-indigo-50 border border-indigo-100 p-4 mb-4">
+              <div className="flex items-center gap-2 text-indigo-800 font-semibold mb-2">
+                <Sparkles className="w-5 h-5" />
+                Yapay Zeka Analizi
+              </div>
+              <p className="text-sm text-indigo-700">
+                Bu belgenin <strong>{moduleName}</strong> modülüne ait olduğu tespit edildi. 
+                {rawData.company_name && <span> Karşı Taraf: <strong>{rawData.company_name}</strong>.</span>}
+                {rawData.description && <span> İşlem Açıklaması: <em>{rawData.description}</em>.</span>}
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div className="rounded-lg bg-gray-50 p-4">
               <p className="text-sm text-gray-600">Fatura No</p>
@@ -95,8 +123,7 @@ export function InvoiceApproval({
 
           <div className="rounded-lg bg-yellow-50 p-4 text-sm text-yellow-800">
             <p>
-              <strong>Uyarı:</strong> Bu faturayı onayladıktan sonra muhasebe defterine otomatik
-              olarak kaydedilecektir. Devam etmek istediğinizden emin misiniz?
+              <strong>Uyarı:</strong> Bu faturayı onayladıktan sonra fatura arşive alınacak ve <strong>{moduleName}</strong> içerisine ilgili kayıtlar otomatik olarak eklenecektir. Devam etmek istediğinizden emin misiniz?
             </p>
           </div>
 

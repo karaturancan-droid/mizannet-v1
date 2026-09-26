@@ -6,10 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/components/ui/toast';
 import { Loader2 } from 'lucide-react';
 
 export function ProfileSection() {
   const { settings, loading, setSetting, loadAllSettings } = useAyarlar();
+  const { addToast } = useToast();
   const [formData, setFormData] = useState<Settings>({});
   const [isSaving, setIsSaving] = useState(false);
 
@@ -30,6 +32,7 @@ export function ProfileSection() {
         'phone',
         'email',
         'contact_person',
+        'salary_payment_day',
       ];
 
       for (const key of keys) {
@@ -38,9 +41,10 @@ export function ProfileSection() {
         }
       }
 
-      alert('Profil ayarları kaydedildi');
+      window.dispatchEvent(new Event('settings-changed'));
+      addToast({ title: 'Profil ayarları kaydedildi', variant: 'success' });
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Kaydetme başarısız');
+      addToast({ title: 'Kaydetme başarısız', description: err instanceof Error ? err.message : 'Bilinmeyen hata', variant: 'destructive' });
     } finally {
       setIsSaving(false);
     }
@@ -115,17 +119,32 @@ export function ProfileSection() {
             id="contact_person"
             value={formData.contact_person || ''}
             onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
-            placeholder="Yetkili kişi adı"
+            placeholder="Ad Soyad"
             disabled={isSaving}
           />
         </div>
 
-        <div className="flex justify-end pt-4">
-          <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Kaydet
-          </Button>
+        <div>
+          <Label htmlFor="salary_payment_day">Maaş Ödeme Günü</Label>
+          <Input
+            id="salary_payment_day"
+            type="number"
+            min="1"
+            max="31"
+            value={formData.salary_payment_day || '5'}
+            onChange={(e) => setFormData({ ...formData, salary_payment_day: e.target.value })}
+            placeholder="Örn: 5"
+            disabled={isSaving}
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            Her ayın hangi günü maaşların ödeneceğini belirtin.
+          </p>
         </div>
+
+        <Button onClick={handleSave} disabled={isSaving} className="w-full mt-6">
+          {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Kaydet
+        </Button>
       </CardContent>
     </Card>
   );

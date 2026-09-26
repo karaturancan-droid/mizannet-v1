@@ -43,7 +43,7 @@ export function VehicleTiresTab({ tires, loading }: VehicleTiresTabProps) {
               <TableCell>{tire.position || '-'}</TableCell>
               <TableCell>{tire.dot_code || '-'}</TableCell>
               <TableCell className="text-right">
-                {tire.tread_depth !== undefined ? `${tire.tread_depth}` : '-'}
+                {tire.tread_depth !== undefined && tire.tread_depth !== null ? `${tire.tread_depth}` : '-'}
               </TableCell>
               <TableCell>
                 {tire.change_date ? formatDateTR(tire.change_date) : '-'}

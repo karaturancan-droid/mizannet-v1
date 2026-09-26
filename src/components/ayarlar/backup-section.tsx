@@ -5,10 +5,12 @@ import { useAyarlar } from '@/hooks/use-ayarlar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useToast } from '@/components/ui/toast';
 import { Loader2, Download, Upload } from 'lucide-react';
 
 export function BackupSection() {
   const { loading, exportBackup, importBackup } = useAyarlar();
+  const { addToast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -23,14 +25,14 @@ export function BackupSection() {
         const element = document.createElement('a');
         const file = new Blob([backupData], { type: 'application/json' });
         element.href = URL.createObjectURL(file);
-        element.download = `madenova-backup-${new Date().toISOString().split('T')[0]}.json`;
+        element.download = `mizannet-backup-${new Date().toISOString().split('T')[0]}.json`;
         document.body.appendChild(element);
         element.click();
         document.body.removeChild(element);
-        alert('Yedek başarıyla indirildi');
+        addToast({ title: 'Yedek başarıyla indirildi', variant: 'success' });
       }
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Yedek oluşturulamadı');
+      addToast({ title: 'Yedek oluşturulamadı', description: err instanceof Error ? err.message : 'Bilinmeyen hata', variant: 'destructive' });
     } finally {
       setIsExporting(false);
     }
@@ -49,7 +51,7 @@ export function BackupSection() {
       setPendingBackupData(text);
       setShowConfirm(true);
     } catch (err) {
-      alert('Dosya okunamadı');
+      addToast({ title: 'Dosya okunamadı', variant: 'destructive' });
     }
   };
 
@@ -59,11 +61,11 @@ export function BackupSection() {
     setIsImporting(true);
     try {
       await importBackup(pendingBackupData);
-      alert('Yedek başarıyla geri yüklendi');
+      addToast({ title: 'Yedek başarıyla geri yüklendi', variant: 'success' });
       setShowConfirm(false);
       setPendingBackupData(null);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Yedek geri yüklenemedi');
+      addToast({ title: 'Yedek geri yüklenemedi', description: err instanceof Error ? err.message : 'Bilinmeyen hata', variant: 'destructive' });
     } finally {
       setIsImporting(false);
     }

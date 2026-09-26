@@ -24,24 +24,42 @@ export function CompanyList({
   loading,
 }: CompanyListProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [hideZeroBalances, setHideZeroBalances] = useState(false);
 
   const filteredCompanies = useMemo(() => {
-    if (!searchQuery.trim()) return companies;
-    const query = searchQuery.toLowerCase();
-    return companies.filter(
-      (c) =>
-        c.name.toLowerCase().includes(query) ||
-        c.tax_no?.toLowerCase().includes(query) ||
-        c.phone?.includes(query) ||
-        c.email?.toLowerCase().includes(query)
-    );
-  }, [companies, searchQuery]);
+    let result = companies;
+    if (hideZeroBalances) {
+      result = result.filter(c => Math.abs(c.balance || 0) > 0.01);
+    }
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        (c) =>
+          c.name.toLowerCase().includes(query) ||
+          c.tax_no?.toLowerCase().includes(query) ||
+          c.phone?.includes(query) ||
+          c.email?.toLowerCase().includes(query)
+      );
+    }
+    return result;
+  }, [companies, searchQuery, hideZeroBalances]);
 
   return (
     <div className="flex flex-col h-full gap-4">
       {/* Başlık ve Arama */}
       <div className="space-y-3">
-        <h2 className="text-lg font-semibold">Firma Rehberi</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Firma Rehberi</h2>
+          <label className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground hover:text-foreground">
+            <input 
+              type="checkbox" 
+              className="rounded border-gray-300"
+              checked={hideZeroBalances}
+              onChange={(e) => setHideZeroBalances(e.target.checked)}
+            />
+            Sıfır Bakiyeleri Gizle
+          </label>
+        </div>
         <Input
           placeholder="Firma adı, VKN, telefon veya e-posta ile ara..."
           value={searchQuery}
@@ -79,10 +97,10 @@ export function CompanyList({
                     {company.name}
                   </h3>
                   <Badge
-                    variant={company.balance >= 0 ? 'default' : 'destructive'}
-                    className="flex-shrink-0"
+                    variant={company.balance < 0 ? 'destructive' : company.balance > 0 ? 'default' : 'secondary'}
+                    className={`flex-shrink-0 ${company.balance > 0 ? 'bg-emerald-500 hover:bg-emerald-600' : ''}`}
                   >
-                    {company.balance >= 0 ? 'Alacak' : 'Borç'}
+                    {company.balance > 0 ? 'Bize Borçlu' : company.balance < 0 ? 'Biz Borçluyuz' : 'Bakiye Yok'}
                   </Badge>
                 </div>
                 <div className="text-sm font-semibold">

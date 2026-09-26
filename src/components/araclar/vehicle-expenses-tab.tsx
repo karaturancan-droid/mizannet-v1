@@ -27,11 +27,11 @@ export function VehicleExpensesTab({
   return (
     <div className="space-y-4">
       {summary && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-          {Object.entries(summary.total_by_type).map(([type, amount]) => (
-            <Card key={type} className="p-3">
-              <p className="text-xs text-muted-foreground capitalize">{type}</p>
-              <p className="font-semibold">{formatCurrencyTRY(amount)}</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+          {summary.by_type.map((item) => (
+            <Card key={item.type} className="p-3">
+              <p className="text-xs text-muted-foreground capitalize">{item.type}</p>
+              <p className="font-semibold">{formatCurrencyTRY(item.total)}</p>
             </Card>
           ))}
           <Card className="p-3 bg-primary text-primary-foreground">

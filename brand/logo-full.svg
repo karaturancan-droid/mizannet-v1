@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 48" fill="none">
+  <!-- İzometrik Logo Sembolü -->
+  <polygon points="7.34,30.96 21.00,38.84 34.66,30.96 34.66,34.37 21.00,42.26 7.34,34.37" fill="#BDBDBD" stroke="#1E293B" stroke-width="1.5" stroke-linejoin="round"/>
+  <polygon points="12.24,19.17 13.28,18.57 21.00,23.02 28.72,18.57 29.76,19.17 29.76,32.30 26.64,34.10 26.64,31.13 21.00,25.70 15.36,31.13 15.36,34.10 12.24,32.30" fill="#9AA1A8" stroke="#1E293B" stroke-width="1.5" stroke-linejoin="round"/>
+  <polygon points="7.34,14.18 10.76,12.21 21.00,18.13 31.24,12.21 34.66,14.18 34.66,29.47 31.24,31.44 31.24,15.63 21.00,21.54 10.76,15.63 10.76,31.44 7.34,29.47" fill="#237CC8" stroke="#1E293B" stroke-width="1.5" stroke-linejoin="round"/>
+  <polygon points="21.00,8.41 28.12,12.53 21.00,16.64 13.88,12.53" fill="#BDBDBD" stroke="#1E293B" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- Tipografi -->
+  <text x="48" y="32" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-weight="700" font-size="22" letter-spacing="-0.02em" fill="#0F172A">Mizan<tspan font-weight="700" fill="#237CC8">Net</tspan></text>
+</svg>

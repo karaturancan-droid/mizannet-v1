@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { formatCurrencyTRY, formatDateTR } from '@/lib/format';
+import { open } from '@tauri-apps/plugin-shell';
 import type { Company, LedgerEntry, LedgerSummary } from '@/hooks/use-cari';
 
 interface CompanyDetailsProps {
@@ -77,7 +78,60 @@ export function CompanyDetails({
                 </p>
               )}
             </div>
-            <div className="flex gap-2 flex-shrink-0">
+            <div className="flex gap-2 flex-shrink-0 items-center">
+              {/* Mail Gönder Butonu */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 hover:text-blue-800"
+                onClick={async () => {
+                  const bakiye = formatCurrencyTRY(company.balance || 0);
+                  const durum = (company.balance || 0) < 0 ? 'Borcunuz' : 'Alacağınız';
+                  const msg = `Merhaba ${company.name} yetkilisi,\n\nGüncel hesap ekstrenize göre bakiyeniz: ${bakiye} (${durum}).\n\nDetaylı bilgi için bizimle iletişime geçebilirsiniz. İyi çalışmalar dileriz.`;
+                  
+                  const targetEmail = company.email ? company.email : '';
+                  const mailUrl = `mailto:${targetEmail}?subject=${encodeURIComponent('Cari Hesap Ekstresi')}&body=${encodeURIComponent(msg)}`;
+                  try {
+                    await open(mailUrl);
+                  } catch (e) {
+                    window.open(mailUrl, '_blank');
+                  }
+                }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                Mail
+              </Button>
+              
+              {/* WhatsApp Gönder Butonu */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 hover:text-green-800"
+                onClick={async () => {
+                  const bakiye = formatCurrencyTRY(company.balance || 0);
+                  const durum = (company.balance || 0) < 0 ? 'Borcunuz' : 'Alacağınız';
+                  const msg = `Merhaba ${company.name} yetkilisi,\nGüncel hesap ekstrenize göre bakiyeniz: ${bakiye} (${durum}).\n\nDetaylı bilgi için bizimle iletişime geçebilirsiniz. İyi çalışmalar dileriz.`;
+                  
+                  // Telefon numarasındaki boşluk vb karakterleri temizle
+                  const phoneCleaned = company.phone ? company.phone.replace(/[^0-9]/g, '') : '';
+                  
+                  // Eğer başta 0 varsa 90 yap, yoksa başına 90 ekle vb (Türkiye varsayılan)
+                  // Kullanıcı zaten uluslararası kod ile girmişse olduğu gibi bırakabiliriz.
+                  // Şimdilik sadece temizlenmiş halini kullanıyoruz.
+                  const waUrl = phoneCleaned 
+                    ? `https://wa.me/${phoneCleaned}?text=${encodeURIComponent(msg)}`
+                    : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+                    
+                  try {
+                    await open(waUrl);
+                  } catch (e) {
+                    window.open(waUrl, '_blank');
+                  }
+                }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                WhatsApp
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -127,16 +181,16 @@ export function CompanyDetails({
         <div className="grid grid-cols-2 gap-4">
           <Card>
             <CardContent className="pt-6">
-              <p className="text-xs text-gray-600 mb-1">Toplam Borç</p>
-              <p className="text-xl font-bold text-red-600">
+              <p className="text-xs text-gray-600 mb-1">Toplam Alacağımız (Bize Borcu)</p>
+              <p className="text-xl font-bold text-emerald-600">
                 {formatCurrencyTRY(ledgerSummary.total_debit)}
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <p className="text-xs text-gray-600 mb-1">Toplam Alacak</p>
-              <p className="text-xl font-bold text-green-600">
+              <p className="text-xs text-gray-600 mb-1">Toplam Borcumuz (Bizden Alacağı)</p>
+              <p className="text-xl font-bold text-red-600">
                 {formatCurrencyTRY(ledgerSummary.total_credit)}
               </p>
             </CardContent>
@@ -200,79 +254,91 @@ export function CompanyDetails({
               Bu dönemde hareket bulunmamaktadır
             </div>
           ) : (
-            <div className="space-y-2">
-              {/* Tablo Başlığı */}
-              <div className="grid grid-cols-12 gap-2 text-xs font-semibold text-gray-600 pb-2 border-b sticky top-0 bg-white">
-                <div className="col-span-1">SIRA</div>
-                <div className="col-span-2">TARİH</div>
-                <div className="col-span-2">BELGE NO</div>
-                <div className="col-span-2">AÇIKLAMA</div>
-                <div className="col-span-1 text-right">BORÇ</div>
-                <div className="col-span-1 text-right">ALACAK</div>
-                <div className="col-span-1 text-right">BAKİYE</div>
-                <div className="col-span-1">İŞLEM</div>
-              </div>
-
-              {/* Tablo Satırları */}
-              {ledgerEntries.map((entry, index) => (
-                <div key={entry.id}>
-                  <div className="grid grid-cols-12 gap-2 text-xs py-2 border-b hover:bg-gray-50 items-center">
-                    <div className="col-span-1">{index + 1}</div>
-                    <div className="col-span-2">{formatDateTR(entry.date)}</div>
-                    <div className="col-span-2 truncate">
-                      {entry.document_no || '-'}
-                    </div>
-                    <div className="col-span-2 truncate">
-                      {entry.description || '-'}
-                    </div>
-                    <div className="col-span-1 text-right font-medium">
-                      {entry.debit > 0 ? formatCurrencyTRY(entry.debit) : '-'}
-                    </div>
-                    <div className="col-span-1 text-right font-medium">
-                      {entry.credit > 0 ? formatCurrencyTRY(entry.credit) : '-'}
-                    </div>
-                    <div className="col-span-1 text-right font-bold">
-                      {formatCurrencyTRY(entry.running_balance)}
-                    </div>
-                    <div className="col-span-1 flex gap-1">
-                      <button
-                        onClick={() => onEditLedgerEntry(entry)}
-                        disabled={loading}
-                        className="text-blue-600 hover:text-blue-800 disabled:text-gray-400 text-xs"
-                      >
-                        Düzenle
-                      </button>
-                      <button
-                        onClick={() => onDeleteLedgerEntry(entry.id)}
-                        disabled={loading}
-                        className="text-red-600 hover:text-red-800 disabled:text-gray-400 text-xs"
-                      >
-                        Sil
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {/* Toplam Satırı */}
-              {ledgerEntries.length > 0 && ledgerSummary && (
-                <div className="grid grid-cols-12 gap-2 text-xs font-bold py-2 border-t-2 bg-gray-50">
-                  <div className="col-span-1"></div>
-                  <div className="col-span-2"></div>
-                  <div className="col-span-2"></div>
-                  <div className="col-span-2 text-right">TOPLAM</div>
-                  <div className="col-span-1 text-right">
-                    {formatCurrencyTRY(ledgerSummary.total_debit)}
-                  </div>
-                  <div className="col-span-1 text-right">
-                    {formatCurrencyTRY(ledgerSummary.total_credit)}
-                  </div>
-                  <div className="col-span-1 text-right">
-                    {formatCurrencyTRY(ledgerSummary.net)}
-                  </div>
-                  <div className="col-span-1"></div>
-                </div>
-              )}
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr className="border-b text-muted-foreground font-semibold sticky top-0 bg-background z-10">
+                    <th className="py-2.5 px-3 text-center w-12">SIRA</th>
+                    <th className="py-2.5 px-3 text-left whitespace-nowrap">TARİH</th>
+                    <th className="py-2.5 px-3 text-left whitespace-nowrap">BELGE NO</th>
+                    <th className="py-2.5 px-3 text-left">AÇIKLAMA</th>
+                    <th className="py-2.5 px-3 text-right whitespace-nowrap">BORÇ (BİZE)</th>
+                    <th className="py-2.5 px-3 text-right whitespace-nowrap">ALACAK (BİZDEN)</th>
+                    <th className="py-2.5 px-3 text-right whitespace-nowrap">BAKİYE</th>
+                    <th className="py-2.5 px-3 text-center whitespace-nowrap w-24">İŞLEM</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {ledgerEntries.map((entry, index) => (
+                    <tr key={entry.id} className="hover:bg-muted/50 transition-colors">
+                      <td className="py-2.5 px-3 text-center text-muted-foreground">{index + 1}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap font-medium">{formatDateTR(entry.date)}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap text-muted-foreground">{entry.document_no || '-'}</td>
+                      <td className="py-2.5 px-3 min-w-[140px] max-w-[260px] truncate" title={entry.description || ''}>
+                        {entry.description || '-'}
+                      </td>
+                      <td className="py-2.5 px-3 text-right whitespace-nowrap font-mono font-medium text-emerald-600 dark:text-emerald-400">
+                        {entry.debit > 0 ? formatCurrencyTRY(entry.debit) : '-'}
+                      </td>
+                      <td className="py-2.5 px-3 text-right whitespace-nowrap font-mono font-medium text-red-600 dark:text-red-400">
+                        {entry.credit > 0 ? formatCurrencyTRY(entry.credit) : '-'}
+                      </td>
+                      <td className={`py-2.5 px-3 text-right whitespace-nowrap font-mono font-bold ${
+                        entry.running_balance > 0
+                          ? 'text-red-600 dark:text-red-400'
+                          : entry.running_balance < 0
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-foreground'
+                      }`}>
+                        {formatCurrencyTRY(entry.running_balance)}
+                      </td>
+                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => onEditLedgerEntry(entry)}
+                            disabled={loading}
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 hover:underline disabled:text-muted-foreground text-xs font-medium cursor-pointer"
+                          >
+                            Düzenle
+                          </button>
+                          <button
+                            onClick={() => onDeleteLedgerEntry(entry.id)}
+                            disabled={loading}
+                            className="text-red-600 hover:text-red-800 dark:text-red-400 hover:underline disabled:text-muted-foreground text-xs font-medium cursor-pointer"
+                          >
+                            Sil
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                {ledgerEntries.length > 0 && ledgerSummary && (
+                  <tfoot>
+                    <tr className="border-t-2 border-border bg-muted/30 font-bold">
+                      <td colSpan={4} className="py-3 px-3 text-right uppercase tracking-wider text-muted-foreground">
+                        TOPLAM
+                      </td>
+                      <td className="py-3 px-3 text-right whitespace-nowrap font-mono text-foreground">
+                        {formatCurrencyTRY(ledgerSummary.total_debit)}
+                      </td>
+                      <td className="py-3 px-3 text-right whitespace-nowrap font-mono text-emerald-600 dark:text-emerald-400">
+                        {formatCurrencyTRY(ledgerSummary.total_credit)}
+                      </td>
+                      <td className={`py-3 px-3 text-right whitespace-nowrap font-mono ${
+                        ledgerSummary.net > 0
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : ledgerSummary.net < 0
+                          ? 'text-red-600 dark:text-red-400'
+                          : 'text-foreground'
+                      }`}>
+                        {formatCurrencyTRY(ledgerSummary.net)}
+                      </td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
+                )}
+              </table>
             </div>
           )}
         </CardContent>

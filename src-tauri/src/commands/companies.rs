@@ -12,7 +12,19 @@ pub fn create_company(
     email: Option<String>,
     contact_person: Option<String>,
 ) -> Result<Company, String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
+
+    // Premium Check
+    let status: Option<String> = conn.query_row("SELECT value FROM settings WHERE key = 'license_status'", [], |row| row.get(0)).ok();
+    let is_premium = status.as_deref() == Some("PREMIUM");
+    
+    if !is_premium {
+        let count: i32 = conn.query_row("SELECT COUNT(*) FROM companies", [], |row| row.get(0)).unwrap_or(0);
+        if count >= 20 {
+            return Err("Ücretsiz deneme sürümünde en fazla 20 firma ekleyebilirsiniz. Sınırsız firma eklemek için aboneliğinizi yükseltin.".to_string());
+        }
+    }
+
     let id = new_id();
     let created_at = now_iso();
     conn.execute(
@@ -43,7 +55,7 @@ pub fn update_company(
     email: Option<String>,
     contact_person: Option<String>,
 ) -> Result<(), String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
     conn.execute(
         "UPDATE companies SET name = ?1, tax_no = ?2, phone = ?3, email = ?4, contact_person = ?5 WHERE id = ?6",
         rusqlite::params![name, tax_no, phone, email, contact_person, id],
@@ -54,7 +66,7 @@ pub fn update_company(
 
 #[tauri::command]
 pub fn list_companies(pool: State<DbPool>) -> Result<Vec<Company>, String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
     let mut stmt = conn
         .prepare("SELECT id, name, tax_no, phone, email, contact_person, balance, created_at FROM companies ORDER BY name ASC")
         .map_err(|e| e.to_string())?;
@@ -77,7 +89,7 @@ pub fn list_companies(pool: State<DbPool>) -> Result<Vec<Company>, String> {
 
 #[tauri::command]
 pub fn get_company(pool: State<DbPool>, id: String) -> Result<Company, String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
     conn.query_row(
         "SELECT id, name, tax_no, phone, email, contact_person, balance, created_at FROM companies WHERE id = ?1",
         rusqlite::params![id],
@@ -99,7 +111,7 @@ pub fn get_company(pool: State<DbPool>, id: String) -> Result<Company, String> {
 
 #[tauri::command]
 pub fn delete_company(pool: State<DbPool>, id: String) -> Result<(), String> {
-    let mut conn = pool.0.get().map_err(|e| e.to_string())?;
+    let mut conn = pool.get_conn().map_err(|e| e.to_string())?;
     let tx = conn.transaction().map_err(|e| e.to_string())?;
 
     // Cascade: move all ledger entries of this company into recycle bin individually first.

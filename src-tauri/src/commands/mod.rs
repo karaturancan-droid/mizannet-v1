@@ -11,3 +11,12 @@ pub mod invoices;
 pub mod settings;
 pub mod backup;
 pub mod asistan;
+pub mod data_location;
+pub mod file_analysis;
+pub mod local_ai;
+pub mod telegram;
+pub mod whatsapp;
+
+pub mod workspaces;
+pub mod workflow;
+pub mod branches;

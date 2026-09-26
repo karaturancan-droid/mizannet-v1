@@ -23,18 +23,37 @@ export function ProductList({
   loading,
 }: ProductListProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [hideZeroStock, setHideZeroStock] = useState(false);
 
   const filteredProducts = useMemo(() => {
-    return products.filter(
-      (p) =>
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.sku?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [products, searchTerm]);
+    let result = products;
+    if (hideZeroStock) {
+      result = result.filter(p => p.current_stock > 0);
+    }
+    if (searchTerm.trim()) {
+      result = result.filter(
+        (p) =>
+          p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          p.sku?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    return result;
+  }, [products, searchTerm, hideZeroStock]);
 
   return (
     <div className="flex flex-col h-full gap-4">
       <div className="space-y-2">
+        <div className="flex items-center justify-between mb-1">
+          <label className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground hover:text-foreground">
+            <input 
+              type="checkbox" 
+              className="rounded border-gray-300"
+              checked={hideZeroStock}
+              onChange={(e) => setHideZeroStock(e.target.checked)}
+            />
+            Tükenmiş Ürünleri Gizle
+          </label>
+        </div>
         <Input
           placeholder="Ürün adı veya SKU ile ara..."
           value={searchTerm}
@@ -68,7 +87,18 @@ export function ProductList({
                 }`}
                 onClick={() => onSelectProduct(product.id)}
               >
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-3">
+                  {product.image_path ? (
+                    <img 
+                      src={product.image_path.startsWith('data:') ? product.image_path : `file://${product.image_path}`}
+                      alt={product.name}
+                      className="w-12 h-12 object-cover rounded bg-slate-100"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 flex items-center justify-center bg-slate-100 rounded text-slate-400 font-bold">
+                      {product.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold truncate">{product.name}</h3>
                     {product.sku && (

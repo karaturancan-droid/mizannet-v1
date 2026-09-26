@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { callBackend } from '@/lib/tauri';
+import { useBranch } from '@/contexts/BranchContext';
 
 export interface TaxItem {
   id: string;
@@ -20,13 +21,15 @@ export function useVergi() {
   const [statusFilter, setStatusFilter] = useState<'tümü' | 'bekliyor' | 'ödendi' | 'gecikti'>('tümü');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  const { activeBranchId } = useBranch();
 
   // Vergi kaydı listesini yükle
   const loadTaxItems = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await callBackend<TaxItem[]>('list_tax_items');
+      const result = await callBackend<TaxItem[]>('list_tax_items', { branch_id: activeBranchId });
       setTaxItems(result);
       // Overdue öğeleri işaretle
       await callBackend('refresh_overdue_tax_items');
@@ -50,7 +53,8 @@ export function useVergi() {
     }) => {
       setError(null);
       try {
-        const newItem = await callBackend<TaxItem>('create_tax_item', data);
+        const payload = { ...data, branch_id: activeBranchId };
+        const newItem = await callBackend<TaxItem>('create_tax_item', payload);
         setTaxItems((prev) => [...prev, newItem]);
         return newItem;
       } catch (err) {
@@ -78,7 +82,8 @@ export function useVergi() {
     ) => {
       setError(null);
       try {
-        await callBackend('update_tax_item', { id, ...data });
+        const payload = { id, ...data, branch_id: activeBranchId };
+        await callBackend('update_tax_item', payload);
         setTaxItems((prev) =>
           prev.map((item) => (item.id === id ? { ...item, ...data } : item))
         );

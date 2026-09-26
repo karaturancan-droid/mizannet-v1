@@ -50,10 +50,6 @@ export function ProductDetails({
           <p className="font-semibold">{formatCurrencyTRY(product.purchase_price)}</p>
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">Satış Fiyatı</p>
-          <p className="font-semibold">{formatCurrencyTRY(product.sale_price)}</p>
-        </div>
-        <div>
           <p className="text-xs text-muted-foreground">Minimum Stok</p>
           <p className="font-semibold">{product.min_stock}</p>
         </div>

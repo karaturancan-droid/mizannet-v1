@@ -3,14 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useBelgeler, Document } from '@/hooks/use-belgeler';
 import { formatDateTR } from '@/lib/format';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -21,24 +13,25 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Download, Trash2, Edit2 } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Loader2, ExternalLink, Trash2, Edit2, FileText } from 'lucide-react';
+import { useToast } from '@/components/ui/toast';
 
 interface DocumentListProps {
+  documents: Document[];
+  loading: boolean;
+  error: string | null;
   onEdit: (doc: Document) => void;
   onDelete: (id: string) => void;
   onRefresh: () => void;
 }
 
-export function DocumentList({ onEdit, onDelete, onRefresh }: DocumentListProps) {
-  const { documents, loading, error, loadDocuments } = useBelgeler();
+export function DocumentList({ documents, loading, error, onEdit, onDelete, onRefresh }: DocumentListProps) {
+  const { openDocumentFile } = useBelgeler();
+  const { addToast } = useToast();
   const [filteredDocs, setFilteredDocs] = useState<Document[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
-
-  useEffect(() => {
-    loadDocuments();
-  }, [loadDocuments]);
 
   useEffect(() => {
     let filtered = documents;
@@ -77,14 +70,11 @@ export function DocumentList({ onEdit, onDelete, onRefresh }: DocumentListProps)
     return null;
   };
 
-  const handleDownload = (doc: Document) => {
-    if (doc.file_path) {
-      // Tauri dosya indirme işlemi
-      const link = document.createElement('a');
-      link.href = doc.file_path;
-      link.download = doc.title;
-      link.click();
-    }
+  const handleOpenFile = (doc: Document) => {
+    if (!doc.file_path) return;
+    openDocumentFile(doc.file_path).catch((err) => {
+      addToast({ title: 'Dosya açılamadı', description: err instanceof Error ? err.message : 'Bilinmeyen hata', variant: 'destructive' });
+    });
   };
 
   const categories = Array.from(new Set(documents.map((doc) => doc.category).filter(Boolean)));
@@ -118,111 +108,90 @@ export function DocumentList({ onEdit, onDelete, onRefresh }: DocumentListProps)
           onChange={(e) => setSearchTerm(e.target.value)}
           className="flex-1"
         />
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+        <Select value={categoryFilter === '' ? 'all' : categoryFilter} onValueChange={(val) => setCategoryFilter(val === 'all' ? '' : val)}>
           <SelectTrigger className="w-full sm:w-48">
             <SelectValue placeholder="Kategori" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Tümü</SelectItem>
+            <SelectItem value="all">Tümü</SelectItem>
             {categories.map((cat) => (
-              <SelectItem key={cat} value={cat || ''}>
-                {cat}
+              <SelectItem key={cat} value={cat || 'other'}>
+                {cat || 'Diğer'}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>BAŞLIK</TableHead>
-              <TableHead>KATEGORİ</TableHead>
-              <TableHead>TİP</TableHead>
-              <TableHead>SON GEÇERLİLİK</TableHead>
-              <TableHead>ETİKETLER</TableHead>
-              <TableHead>İŞLEMLER</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-8">
-                  <Loader2 className="inline h-6 w-6 animate-spin" />
-                </TableCell>
-              </TableRow>
-            ) : filteredDocs.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                  Sonuç bulunamadı
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredDocs.map((doc) => (
-                <TableRow key={doc.id}>
-                  <TableCell className="font-medium">{doc.title}</TableCell>
-                  <TableCell>{doc.category || '-'}</TableCell>
-                  <TableCell>{doc.file_type || '-'}</TableCell>
-                  <TableCell>
-                    {doc.expiry_date ? (
-                      <div className="flex flex-col gap-1">
-                        <span>{formatDateTR(doc.expiry_date)}</span>
-                        {getExpiryBadge(doc.expiry_date)}
-                      </div>
-                    ) : (
-                      '-'
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {doc.tags ? (
-                      <div className="flex flex-wrap gap-1">
-                        {doc.tags.split(',').map((tag) => (
-                          <Badge key={tag.trim()} variant="outline">
-                            {tag.trim()}
-                          </Badge>
-                        ))}
-                      </div>
-                    ) : (
-                      '-'
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => onEdit(doc)}
-                        title="Düzenle"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      {doc.file_path && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDownload(doc)}
-                          title="İndir"
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => onDelete(doc.id)}
-                        title="Sil"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : filteredDocs.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            Sonuç bulunamadı
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {filteredDocs.map((doc) => (
+            <Card key={doc.id} className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted">
+                  <FileText className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium" title={doc.title}>{doc.title}</p>
+                  <p className="text-xs text-muted-foreground">{doc.category || 'Diğer'}</p>
+                </div>
+                <div className="flex shrink-0 gap-1">
+                  {doc.file_path && (
+                    <button
+                      type="button"
+                      onClick={() => handleOpenFile(doc)}
+                      title="Dosyayı Aç"
+                      className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => onEdit(doc)}
+                    title="Düzenle"
+                    className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDelete(doc.id)}
+                    title="Sil"
+                    className="rounded p-1 text-muted-foreground hover:bg-red-50 hover:text-red-600"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                {doc.expiry_date && (
+                  <>
+                    <span className="text-muted-foreground">{formatDateTR(doc.expiry_date)}</span>
+                    {getExpiryBadge(doc.expiry_date)}
+                  </>
+                )}
+                {doc.tags?.split(',').map((tag) => (
+                  <Badge key={tag.trim()} variant="outline">
+                    {tag.trim()}
+                  </Badge>
+                ))}
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

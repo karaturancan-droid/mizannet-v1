@@ -6,7 +6,7 @@ use tauri::State;
 
 /// Recomputes running_balance for every ledger entry of `company_id` in
 /// (date asc, created_at asc) order, and updates companies.balance to the final value.
-fn recompute_running_balances(conn: &Connection, company_id: &str) -> Result<(), String> {
+pub fn recompute_running_balances(conn: &Connection, company_id: &str) -> Result<(), String> {
     let mut stmt = conn
         .prepare("SELECT id, debit, credit FROM ledger_entries WHERE company_id = ?1 ORDER BY date ASC, created_at ASC")
         .map_err(|e| e.to_string())?;
@@ -47,25 +47,28 @@ pub fn create_ledger_entry(
     debit: f64,
     credit: f64,
     entry_type: Option<String>,
+    branch_id: Option<String>,
 ) -> Result<LedgerEntry, String> {
-    let mut conn = pool.0.get().map_err(|e| e.to_string())?;
+    let mut conn = pool.get_conn().map_err(|e| e.to_string())?;
     let tx = conn.transaction().map_err(|e| e.to_string())?;
 
     let id = new_id();
     let created_at = now_iso();
+    let bid = branch_id.unwrap_or_else(|| "default_branch".to_string());
+    
     tx.execute(
-        "INSERT INTO ledger_entries (id, company_id, date, document_no, description, debit, credit, running_balance, entry_type, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 0, ?8, ?9)",
-        rusqlite::params![id, company_id, date, document_no, description, debit, credit, entry_type, created_at],
+        "INSERT INTO ledger_entries (id, company_id, date, document_no, description, debit, credit, running_balance, entry_type, created_at, branch_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 0, ?8, ?9, ?10)",
+        rusqlite::params![id, company_id, date, document_no, description, debit, credit, entry_type, created_at, bid],
     )
     .map_err(|e| e.to_string())?;
 
     recompute_running_balances(&tx, &company_id)?;
     tx.commit().map_err(|e| e.to_string())?;
 
-    let conn2 = pool.0.get().map_err(|e| e.to_string())?;
+    let conn2 = pool.get_conn().map_err(|e| e.to_string())?;
     conn2
         .query_row(
-            "SELECT id, company_id, date, document_no, description, debit, credit, running_balance, entry_type, created_at FROM ledger_entries WHERE id = ?1",
+            "SELECT id, company_id, date, document_no, description, debit, credit, running_balance, entry_type, created_at, branch_id FROM ledger_entries WHERE id = ?1",
             rusqlite::params![id],
             map_ledger_row,
         )
@@ -83,7 +86,7 @@ pub fn update_ledger_entry(
     credit: f64,
     entry_type: Option<String>,
 ) -> Result<(), String> {
-    let mut conn = pool.0.get().map_err(|e| e.to_string())?;
+    let mut conn = pool.get_conn().map_err(|e| e.to_string())?;
     let tx = conn.transaction().map_err(|e| e.to_string())?;
 
     let company_id: String = tx
@@ -107,7 +110,7 @@ pub fn update_ledger_entry(
 
 #[tauri::command]
 pub fn delete_ledger_entry(pool: State<DbPool>, id: String) -> Result<(), String> {
-    let mut conn = pool.0.get().map_err(|e| e.to_string())?;
+    let mut conn = pool.get_conn().map_err(|e| e.to_string())?;
     let tx = conn.transaction().map_err(|e| e.to_string())?;
 
     let company_id: String = tx
@@ -137,6 +140,7 @@ fn map_ledger_row(row: &rusqlite::Row) -> rusqlite::Result<LedgerEntry> {
         running_balance: row.get(7)?,
         entry_type: row.get(8)?,
         created_at: row.get(9)?,
+        branch_id: row.get(10).unwrap_or(None),
     })
 }
 
@@ -145,9 +149,14 @@ pub fn list_ledger_entries(
     pool: State<DbPool>,
     company_id: String,
     year_filter: Option<i32>,
+    branch_id: Option<String>,
 ) -> Result<Vec<LedgerEntry>, String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
-    let base = "SELECT id, company_id, date, document_no, description, debit, credit, running_balance, entry_type, created_at FROM ledger_entries WHERE company_id = ?1";
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
+    let mut base = "SELECT id, company_id, date, document_no, description, debit, credit, running_balance, entry_type, created_at, branch_id FROM ledger_entries WHERE company_id = ?1".to_string();
+
+    if let Some(ref bid) = branch_id {
+        base.push_str(&format!(" AND branch_id = '{}'", bid));
+    }
 
     let rows: Vec<LedgerEntry> = if let Some(year) = year_filter {
         let sql = format!("{} AND substr(date, 1, 4) = ?2 ORDER BY date ASC, created_at ASC", base);
@@ -174,19 +183,27 @@ pub fn get_ledger_summary(
     pool: State<DbPool>,
     company_id: String,
     year_filter: Option<i32>,
+    branch_id: Option<String>,
 ) -> Result<LedgerSummary, String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
+    
+    let mut sql = "SELECT COALESCE(SUM(debit),0), COALESCE(SUM(credit),0) FROM ledger_entries WHERE company_id = ?1".to_string();
+    if let Some(ref bid) = branch_id {
+        sql.push_str(&format!(" AND branch_id = '{}'", bid));
+    }
+    
     let (total_debit, total_credit): (f64, f64) = if let Some(year) = year_filter {
         let year_str = year.to_string();
+        sql.push_str(" AND substr(date, 1, 4) = ?2");
         conn.query_row(
-            "SELECT COALESCE(SUM(debit),0), COALESCE(SUM(credit),0) FROM ledger_entries WHERE company_id = ?1 AND substr(date, 1, 4) = ?2",
+            &sql,
             rusqlite::params![company_id, year_str],
             |row| Ok((row.get(0)?, row.get(1)?)),
         )
         .map_err(|e| e.to_string())?
     } else {
         conn.query_row(
-            "SELECT COALESCE(SUM(debit),0), COALESCE(SUM(credit),0) FROM ledger_entries WHERE company_id = ?1",
+            &sql,
             rusqlite::params![company_id],
             |row| Ok((row.get(0)?, row.get(1)?)),
         )

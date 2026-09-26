@@ -1,0 +1,1 @@
+﻿const fs = require('fs'); const dbPath = process.env.APPDATA + '\\com.mizannet.desktop\\mizannet.db'; const Database = require('better-sqlite3'); const db = new Database(dbPath); const rows = db.prepare('SELECT key, value FROM settings WHERE key LIKE '%api_key%' OR key = 'ai_provider' OR key = 'ai_model'').all(); console.log(JSON.stringify(rows, null, 2));

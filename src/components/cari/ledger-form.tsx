@@ -83,11 +83,11 @@ export function LedgerForm({
     const credit = parseTurkishNumber(formData.credit);
 
     if (debit === 0 && credit === 0) {
-      newErrors.amount = 'Borç veya Alacak değeri girilmelidir';
+      newErrors.amount = 'Firmadan Alacak veya Firmaya Borç değeri girilmelidir';
     }
 
     if (debit > 0 && credit > 0) {
-      newErrors.amount = 'Aynı anda hem Borç hem Alacak girilemez';
+      newErrors.amount = 'Aynı anda hem Firmadan Alacak hem Firmaya Borç girilemez';
     }
 
     setErrors(newErrors);
@@ -190,10 +190,10 @@ export function LedgerForm({
             />
           </div>
 
-          {/* Borç ve Alacak */}
+          {/* Firmadan Alacak ve Firmaya Borç */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="debit">Borç (₺)</Label>
+              <Label htmlFor="debit">Firmadan Alacak (₺)</Label>
               <Input
                 id="debit"
                 placeholder="0,00"
@@ -210,7 +210,7 @@ export function LedgerForm({
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="credit">Alacak (₺)</Label>
+              <Label htmlFor="credit">Firmaya Borç (₺)</Label>
               <Input
                 id="credit"
                 placeholder="0,00"

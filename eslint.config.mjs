@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Rust derleme çıktıları (tauri-codegen tarafından üretilen JS dosyaları):
+    "src-tauri/target/**",
   ]),
 ]);
 

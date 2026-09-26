@@ -71,7 +71,7 @@ export function VehicleDetails({
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {vehicle.km !== undefined && (
+        {vehicle.km !== undefined && vehicle.km !== null && (
           <div>
             <p className="text-xs text-muted-foreground">KM</p>
             <p className="font-semibold">{vehicle.km.toLocaleString('tr-TR')}</p>

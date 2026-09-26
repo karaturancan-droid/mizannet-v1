@@ -5,7 +5,7 @@ import { Leave } from '@/hooks/use-isciler';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { useToast } from '@/components/ui/toast';
 
 interface LeaveFormProps {
   open: boolean;
@@ -44,6 +45,7 @@ export function LeaveForm({
   initialData,
   isLoading,
 }: LeaveFormProps) {
+  const { addToast } = useToast();
   const [formData, setFormData] = useState({
     start_date: '',
     end_date: '',
@@ -73,7 +75,7 @@ export function LeaveForm({
     e.preventDefault();
 
     if (!formData.start_date || !formData.end_date) {
-      alert('Lütfen başlangıç ve bitiş tarihlerini doldurunuz.');
+      addToast({ title: 'Lütfen başlangıç ve bitiş tarihlerini doldurunuz.', variant: 'destructive' });
       return;
     }
 
@@ -133,12 +135,16 @@ export function LeaveForm({
                 setFormData((prev) => ({ ...prev, type: value }))
               }
             >
-              <option value="">Seçiniz</option>
-              {LEAVE_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
+              <SelectTrigger>
+                <SelectValue placeholder="Seçiniz" />
+              </SelectTrigger>
+              <SelectContent>
+                {LEAVE_TYPES.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           </div>
 

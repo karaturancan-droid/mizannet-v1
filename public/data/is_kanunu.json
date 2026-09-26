@@ -1,0 +1,27 @@
+[
+  {
+    "id": "is-1",
+    "title": "Madde 1 - Amaç ve Kapsam",
+    "content": "Bu Kanunun amacı işverenler ile bir iş sözleşmesine dayanarak çalıştırılan işçilerin çalışma şartları ve çalışma ortamına ilişkin hak ve sorumluluklarını düzenlemektir."
+  },
+  {
+    "id": "is-2",
+    "title": "Madde 2 - İşçi, işveren ve işyeri",
+    "content": "Bir iş sözleşmesine dayanarak çalışan gerçek kişiye işçi, işçi çalıştıran gerçek veya tüzel kişiye yahut tüzel kişiliği olmayan kurum ve kuruluşlara işveren, işçi ile işveren arasında kurulan ilişkiye iş ilişkisi denir."
+  },
+  {
+    "id": "is-17",
+    "title": "Madde 17 - İhbar Bildirimi",
+    "content": "Belirsiz süreli iş sözleşmelerinin feshinden önce durumun diğer tarafa bildirilmesi gerekir.\nİş sözleşmeleri;\na) İşi altı aydan az sürmüş olan işçi için, bildirimin diğer tarafa yapılmasından başlayarak iki hafta sonra,\nb) İşi altı aydan bir buçuk yıla kadar sürmüş olan işçi için, bildirimin diğer tarafa yapılmasından başlayarak dört hafta sonra,\nc) İşi bir buçuk yıldan üç yıla kadar sürmüş olan işçi için, bildirimin diğer tarafa yapılmasından başlayarak altı hafta sonra,\nd) İşi üç yıldan fazla sürmüş işçi için, bildirim yapılmasından başlayarak sekiz hafta sonra,\nfeshedilmiş sayılır."
+  },
+  {
+    "id": "is-41",
+    "title": "Madde 41 - Fazla Çalışma Ücreti",
+    "content": "Ülkenin genel yararları yahut işin niteliği veya üretimin artırılması gibi nedenlerle fazla çalışma yapılabilir. Fazla çalışma, Kanunda yazılı koşullar çerçevesinde, haftalık kırkbeş saati aşan çalışmalardır.\nHer bir saat fazla çalışma için verilecek ücret normal çalışma ücretinin saat başına düşen miktarının yüzde elli yükseltilmesi suretiyle ödenir."
+  },
+  {
+    "id": "is-53",
+    "title": "Madde 53 - Yıllık Ücretli İzin Hakkı",
+    "content": "İşyerinde işe başladığı günden itibaren, deneme süresi de içinde olmak üzere, en az bir yıl çalışmış olan işçilere yıllık ücretli izin verilir.\nYıllık ücretli izin hakkından vazgeçilemez.\nİşçilere verilecek yıllık ücretli izin süresi, hizmet süresi;\na) Bir yıldan beş yıla kadar (beş yıl dahil) olanlara ondört günden,\nb) Beş yıldan fazla onbeş yıldan az olanlara yirmi günden,\nc) Onbeş yıl (dahil) ve daha fazla olanlara yirmialtı günden,\naz olamaz."
+  }
+]

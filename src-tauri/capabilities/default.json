@@ -6,6 +6,19 @@
     "main"
   ],
   "permissions": [
-    "core:default"
+    "core:default",
+    "dialog:default",
+    "fs:default",
+    "notification:default",
+    "shell:default",
+    "fs:allow-read-file",
+    "fs:allow-write-file",
+    "fs:allow-exists",
+    "core:window:allow-create",
+    "dialog:allow-save",
+    {
+      "identifier": "shell:allow-open",
+      "allow": [{ "args": ["http://*", "https://*", "mailto:*"] }]
+    }
   ]
 }

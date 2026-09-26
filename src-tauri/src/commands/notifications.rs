@@ -1,9 +1,10 @@
+#![allow(unused)]
 use crate::db::DbPool;
 use crate::helpers::{new_id, now_iso};
 use crate::models::Notification;
 use chrono::{NaiveDate, Utc};
 use rusqlite::Connection;
-use tauri::State;
+use tauri::{AppHandle, State};
 
 fn days_left_from(due_date: &str) -> Option<i64> {
     let today = Utc::now().date_naive();
@@ -191,9 +192,36 @@ pub fn refresh_notifications_conn(conn: &Connection) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn refresh_notifications(pool: State<DbPool>) -> Result<(), String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
-    refresh_notifications_conn(&conn)
+pub fn refresh_notifications(pool: State<DbPool>, app: AppHandle) -> Result<(), String> {
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
+    refresh_notifications_conn(&conn)?;
+
+    // Acil (days_left <= 3 veya geçmiş) bildirimleri masaüstüne gönder
+    let mut stmt = conn
+        .prepare("SELECT title, days_left FROM notifications WHERE status = 'aktif' AND (days_left IS NULL OR days_left <= 3) LIMIT 5")
+        .map_err(|e| e.to_string())?;
+    let urgent: Vec<(String, Option<i64>)> = stmt
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+        .map_err(|e| e.to_string())?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())?;
+
+    if !urgent.is_empty() {
+        use tauri_plugin_notification::NotificationExt;
+        for (title, days) in &urgent {
+            let body = match days {
+                Some(d) if *d < 0 => format!("{} gün gecikmiş!", d.abs()),
+                Some(d) => format!("{} gün kaldı", d),
+                None => "Acil dikkat gerekiyor".to_string(),
+            };
+            let _ = app.notification().builder()
+                .title(title)
+                .body(&body)
+                .show();
+        }
+    }
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -202,17 +230,21 @@ pub fn list_notifications(
     module: Option<String>,
     status: Option<String>,
 ) -> Result<Vec<Notification>, String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
     let mut sql = "SELECT id, title, module, related_id, due_date, days_left, status, source_type, created_at FROM notifications WHERE 1=1".to_string();
     let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
 
     if let Some(m) = &module {
-        sql.push_str(" AND module = ?");
-        params.push(Box::new(m.clone()));
+        if !m.is_empty() {
+            sql.push_str(" AND module = ?");
+            params.push(Box::new(m.clone()));
+        }
     }
     if let Some(s) = &status {
-        sql.push_str(" AND status = ?");
-        params.push(Box::new(s.clone()));
+        if !s.is_empty() {
+            sql.push_str(" AND status = ?");
+            params.push(Box::new(s.clone()));
+        }
     }
     sql.push_str(" ORDER BY days_left ASC");
 
@@ -237,12 +269,57 @@ pub fn list_notifications(
 }
 
 #[tauri::command]
-pub fn update_notification_status(pool: State<DbPool>, id: String, status: String) -> Result<(), String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+pub fn update_notification_status(
+    pool: State<DbPool>,
+    id: String,
+    status: String,
+) -> Result<(), String> {
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
     conn.execute(
         "UPDATE notifications SET status = ?1 WHERE id = ?2",
         rusqlite::params![status, id],
     )
     .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn update_notification_date(
+    pool: State<DbPool>,
+    id: String,
+    new_date: String,
+) -> Result<(), String> {
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
+    
+    // Önce notification tablosunda bul
+    let row: Result<(String, String, String, String), _> = conn.query_row(
+        "SELECT module, related_id, source_type, title FROM notifications WHERE id = ?1",
+        rusqlite::params![id],
+        |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
+    );
+
+    if let Ok((module, related_id, source_type, title)) = row {
+        // Source table güncellemeleri
+        if source_type == "tax_item" {
+            let _ = conn.execute("UPDATE tax_items SET due_date = ?1 WHERE id = ?2", rusqlite::params![new_date, related_id]);
+        } else if source_type == "document" {
+            let _ = conn.execute("UPDATE documents SET expiry_date = ?1 WHERE id = ?2", rusqlite::params![new_date, related_id]);
+        } else if source_type == "vehicle" {
+            if title.contains("muayene") {
+                let _ = conn.execute("UPDATE vehicles SET inspection_due_date = ?1 WHERE id = ?2", rusqlite::params![new_date, related_id]);
+            } else if title.contains("sigorta") {
+                let _ = conn.execute("UPDATE vehicles SET insurance_due_date = ?1 WHERE id = ?2", rusqlite::params![new_date, related_id]);
+            }
+        }
+        
+        // Yeniden hesaplanan gün
+        let days_left = days_left_from(&new_date).unwrap_or(0);
+        
+        conn.execute(
+            "UPDATE notifications SET due_date = ?1, days_left = ?2 WHERE id = ?3",
+            rusqlite::params![new_date, days_left, id],
+        ).map_err(|e| e.to_string())?;
+    }
+
     Ok(())
 }

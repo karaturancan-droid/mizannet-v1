@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { useToast } from '@/components/ui/toast';
 
 interface WorkerFormProps {
   open: boolean;
@@ -28,6 +29,9 @@ interface WorkerFormProps {
     iban?: string;
     salary: number;
     contract_end_date?: string;
+    image_path?: string;
+    phone?: string;
+    email?: string;
   }) => Promise<void>;
   initialData?: Worker;
   isLoading: boolean;
@@ -40,6 +44,7 @@ export function WorkerForm({
   initialData,
   isLoading,
 }: WorkerFormProps) {
+  const { addToast } = useToast();
   const [formData, setFormData] = useState({
     full_name: '',
     tc_no: '',
@@ -51,7 +56,21 @@ export function WorkerForm({
     iban: '',
     salary: '',
     contract_end_date: '',
+    image_path: '',
+    phone: '',
+    email: '',
   });
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData((prev) => ({ ...prev, image_path: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   useEffect(() => {
     if (initialData) {
@@ -66,6 +85,9 @@ export function WorkerForm({
         iban: initialData.iban || '',
         salary: initialData.salary.toString(),
         contract_end_date: initialData.contract_end_date ? initialData.contract_end_date.split('T')[0] : '',
+        image_path: initialData.image_path || '',
+        phone: initialData.phone || '',
+        email: initialData.email || '',
       });
     } else {
       setFormData({
@@ -79,6 +101,9 @@ export function WorkerForm({
         iban: '',
         salary: '',
         contract_end_date: '',
+        image_path: '',
+        phone: '',
+        email: '',
       });
     }
   }, [initialData, open]);
@@ -87,7 +112,7 @@ export function WorkerForm({
     e.preventDefault();
 
     if (!formData.full_name || !formData.salary) {
-      alert('Lütfen zorunlu alanları doldurunuz.');
+      addToast({ title: 'Lütfen zorunlu alanları doldurunuz.', variant: 'destructive' });
       return;
     }
 
@@ -103,6 +128,9 @@ export function WorkerForm({
         iban: formData.iban || undefined,
         salary: parseFloat(formData.salary),
         contract_end_date: formData.contract_end_date || undefined,
+        image_path: formData.image_path || undefined,
+        phone: formData.phone || undefined,
+        email: formData.email || undefined,
       });
       onOpenChange(false);
     } catch (error) {
@@ -156,6 +184,31 @@ export function WorkerForm({
                 value={formData.birth_date}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, birth_date: e.target.value }))
+                }
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="phone">Telefon</Label>
+              <Input
+                id="phone"
+                placeholder="0555..."
+                value={formData.phone}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, phone: e.target.value }))
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">E-posta</Label>
+              <Input
+                id="email"
+                placeholder="ornek@mail.com"
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, email: e.target.value }))
                 }
               />
             </div>
@@ -249,6 +302,29 @@ export function WorkerForm({
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, contract_end_date: e.target.value }))
                 }
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>İşçi Fotoğrafı (Opsiyonel)</Label>
+            <div className="mt-2 flex items-center gap-4">
+              {formData.image_path ? (
+                <img
+                  src={formData.image_path.startsWith('data:') ? formData.image_path : `file://${formData.image_path}`}
+                  alt="Preview"
+                  className="w-16 h-16 object-cover rounded-full border shadow-sm"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-muted border flex items-center justify-center text-muted-foreground text-xs shadow-sm">
+                  Yok
+                </div>
+              )}
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                disabled={isLoading}
               />
             </div>
           </div>

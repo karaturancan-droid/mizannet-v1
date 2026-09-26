@@ -6,7 +6,7 @@ use tauri::State;
 
 #[tauri::command]
 pub fn list_recycle_bin(pool: State<DbPool>) -> Result<Vec<RecycleBinItem>, String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
     let mut stmt = conn
         .prepare("SELECT id, entity_type, record_data, deleted_at, restore_deadline FROM recycle_bin ORDER BY deleted_at DESC")
         .map_err(|e| e.to_string())?;
@@ -45,7 +45,7 @@ pub fn list_recycle_bin(pool: State<DbPool>) -> Result<Vec<RecycleBinItem>, Stri
 
 #[tauri::command]
 pub fn restore_from_recycle_bin(pool: State<DbPool>, id: String) -> Result<(), String> {
-    let mut conn = pool.0.get().map_err(|e| e.to_string())?;
+    let mut conn = pool.get_conn().map_err(|e| e.to_string())?;
     let tx = conn.transaction().map_err(|e| e.to_string())?;
 
     let (entity_type, record_data): (String, String) = tx
@@ -71,7 +71,7 @@ pub fn restore_from_recycle_bin(pool: State<DbPool>, id: String) -> Result<(), S
 
 #[tauri::command]
 pub fn permanently_delete_recycle_item(pool: State<DbPool>, id: String) -> Result<(), String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
     conn.execute("DELETE FROM recycle_bin WHERE id = ?1", rusqlite::params![id])
         .map_err(|e| e.to_string())?;
     Ok(())
@@ -79,7 +79,7 @@ pub fn permanently_delete_recycle_item(pool: State<DbPool>, id: String) -> Resul
 
 #[tauri::command]
 pub fn purge_expired_recycle_bin(pool: State<DbPool>) -> Result<(), String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
     let now = now_iso();
     conn.execute(
         "DELETE FROM recycle_bin WHERE restore_deadline < ?1",

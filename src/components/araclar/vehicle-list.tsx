@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { VehicleIcons } from './vehicle-icons';
 
 interface VehicleListProps {
   vehicles: Vehicle[];
@@ -45,6 +46,29 @@ export function VehicleList({
     );
   }, [vehicles, searchTerm]);
 
+  const getVehicleIcon = (v: Vehicle) => {
+    const category = (v.category || '').toLowerCase();
+    const term = `${v.brand || ''} ${v.model || ''}`.toLowerCase();
+    
+    if (category === 'tır' || category === 'kamyon' || term.includes('kamyon') || term.includes('tır') || term.includes('actros')) {
+      return <VehicleIcons.Truck className="w-8 h-8 text-blue-600" />;
+    }
+    if (category === 'kamyonet' || term.includes('kamyonet') || term.includes('pikap') || term.includes('pickup') || term.includes('transit')) {
+      return <VehicleIcons.Pickup className="w-8 h-8 text-blue-500" />;
+    }
+    if (category === 'traktör' || term.includes('traktör') || term.includes('tractor') || term.includes('new holland')) {
+      return <VehicleIcons.Tractor className="w-8 h-8 text-red-600" />;
+    }
+    if (category === 'otobüs' || category === 'minibüs' || term.includes('otobüs') || term.includes('minibüs')) {
+      return <VehicleIcons.Bus className="w-8 h-8 text-green-600" />;
+    }
+    if (term.includes('kepçe') || term.includes('ekskavatör') || term.includes('dozer') || term.includes('jcb')) {
+      return <VehicleIcons.Excavator className="w-8 h-8 text-orange-600" />;
+    }
+    
+    return <VehicleIcons.Car className="w-8 h-8 text-slate-600" />;
+  };
+
   return (
     <div className="flex flex-col h-full gap-4">
       <div className="space-y-2">
@@ -79,14 +103,18 @@ export function VehicleList({
               }`}
               onClick={() => onSelectVehicle(vehicle.id)}
             >
-              <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-slate-100 rounded-lg">
+                  {getVehicleIcon(vehicle)}
+                </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold truncate">{vehicle.plate}</h3>
-                  {(vehicle.brand || vehicle.model) && (
-                    <p className="text-xs opacity-75">
-                      {vehicle.brand} {vehicle.model}
-                    </p>
-                  )}
+                  {(v => {
+                    const parts = [v.category, v.brand, v.model].filter(Boolean);
+                    return parts.length > 0 ? (
+                      <p className="text-xs opacity-75">{parts.join(' - ')}</p>
+                    ) : null;
+                  })(vehicle)}
                   <div className="flex items-center gap-2 mt-2">
                     <Badge
                       className={`text-xs text-white ${statusColors[vehicle.status]}`}

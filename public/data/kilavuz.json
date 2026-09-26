@@ -1,0 +1,42 @@
+[
+  {
+    "id": "kilavuz-1",
+    "title": "1. MizanNet'e Giriş ve Temel Mantık",
+    "content": "MizanNet, tamamen çevrimdışı (offline) ve yüksek güvenlikli (AES-256) çalışan bir ön muhasebe sistemidir.\n\nSisteme giriş yaptığınızda karşınıza çıkan Kontrol Paneli (Dashboard), işletmenizin o anki net finansal durumunu (Kasa, Banka, Alacak, Borç, Vergi Yükü) tek ekranda özetler.\n\nVerileriniz bilgisayarınızda C:\\Users\\...\\.gemini\\antigravity-ide\\mizannet.db dosyasında tutulur ve hiçbir şekilde buluta aktarılmaz."
+  },
+  {
+    "id": "kilavuz-2",
+    "title": "2. İşletme ve Profil Yönetimi",
+    "content": "MizanNet, tek programda birden fazla işletmeyi (şirketi) yönetmenize olanak tanır.\n\nSol üst köşedeki İşletme Seçici açılır menüsünden '+ Yeni İşletme Ekle' diyerek dilediğiniz kadar işletme oluşturabilir, işletmeler arası anında geçiş yapabilirsiniz. Her işletmenin kendi Cari, Depo, İşçi ve Vergi kayıtları vardır."
+  },
+  {
+    "id": "kilavuz-3",
+    "title": "3. Cari Hesaplar (Alıcılar ve Satıcılar)",
+    "content": "Cari Hesaplar modülü, işletmenizin ticaret yaptığı tüm kurum ve kişileri kaydettiğiniz bölümdür.\n\n- 'Yeni Cari Ekle' butonuna basarak firma bilgilerini girin.\n- Cari detayı içine girerek 'Defter / İşlem Ekle' butonundan tahsilat, ödeme veya fatura işlemini işleyin.\n- Bakiye otomatik olarak borç/alacak tablosunda güncellenecektir."
+  },
+  {
+    "id": "kilavuz-4",
+    "title": "4. Depo ve Stok Yönetimi",
+    "content": "Satılan mallarınız veya üretim için kullandığınız hammaddelerin takibi bu modülden yapılır.\n\n- Yeni bir ürün kartı açarken 'Kritik Stok' seviyesi belirleyebilirsiniz.\n- Stok Giriş ve Çıkış işlemleri 'Stok Hareketi Ekle' butonuyla yapılır.\n- Stok Kritik Seviyenin altına düştüğünde MizanNet size otomatik uyarı verir."
+  },
+  {
+    "id": "kilavuz-5",
+    "title": "5. İşçiler ve Maaş / Bordro",
+    "content": "İşletmenizde çalışan personellerin puantaj, maaş, avans ve mesai takipleri İşçiler modülünden yapılır.\n\n- Yeni işçi eklerken maaş tutarını girin.\n- Her ay 'Bordro / Maaş İşle' butonuna basarak o ayki SGK, Gelir Vergisi ve net ödenecek tutarı otomatik hesaplatın.\n- Eğer işçi fazla mesai yapmışsa veya avans almışsa, bordroya bu kalemleri eklediğinizde sistem net tutarı yeniden hesaplar."
+  },
+  {
+    "id": "kilavuz-6",
+    "title": "6. Araçlar ve Filo Takibi",
+    "content": "Şirketinize kayıtlı binek veya ticari araçların takibini buradan yapabilirsiniz.\n\n- Tır, Kamyon, Otomobil gibi araç kategorisini seçerek aracı sisteme kaydedin.\n- Muayene ve Sigorta tarihlerini girdiğinizde, tarihi yaklaşan araçlar için uyarı alırsınız.\n- Araçların yakıt, tamir ve bakım masraflarını bu modüle işleyerek hangi aracın ne kadar masraf çıkardığını görebilirsiniz."
+  },
+  {
+    "id": "kilavuz-7",
+    "title": "7. Vergi ve Resmi Ödemeler",
+    "content": "Vergi Takvimi modülü, KDV, Stopaj, Kurumlar Vergisi ve SGK Prim ödemelerinizi tek bir takvim üzerinden görmenizi sağlar.\n\n- Manuel olarak 'Vergi Ekle' diyebilir veya diğer modüllerden (İşçi bordrosu vb.) düşen vergileri takip edebilirsiniz.\n- Vergiyi 'Ödendi' olarak işaretlediğinizde, ilgili tutar otomatik olarak Kasa veya Banka bakiyenizden düşer."
+  },
+  {
+    "id": "kilavuz-8",
+    "title": "8. Akıllı Asistan (Yapay Zeka)",
+    "content": "Sağ üst köşedeki veya sol menüdeki 'Asistan' butonuna tıkladığınızda işletmenizin finansal asistanı açılır.\n\n- Sisteme Excel dosyası (Fatura listesi, Cari liste) yükleyip 'Bunları sisteme aktar' diyebilirsiniz.\n- 'Bu ayki toplam KDV ödemem ne kadar?' veya 'Ahmet Yılmaz adlı işçiye ne kadar maaş ödeyeceğim?' gibi sorular sorabilirsiniz.\n- Asistan, Vergi Usul Kanunu, İş Kanunu ve Tekdüzen Hesap Planını bilir ve size hukuki konularda da danışmanlık yapar."
+  }
+]

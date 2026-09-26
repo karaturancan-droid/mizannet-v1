@@ -117,7 +117,7 @@ pub fn restore_row_generic(conn: &Connection, table: &str, json: &JsonValue) -> 
     let columns: Vec<&String> = obj.keys().collect();
     let col_list = columns
         .iter()
-        .map(|c| c.as_str())
+        .map(|c| format!("\"{}\"", c.replace("\"", "\"\"")))
         .collect::<Vec<_>>()
         .join(", ");
     let placeholders = (1..=columns.len())

@@ -1,22 +1,51 @@
-﻿'use client';
+'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useCari, type Company, type LedgerEntry } from '@/hooks/use-cari';
 import { CompanyList } from '@/components/cari/company-list';
 import { CompanyForm } from '@/components/cari/company-form';
 import { CompanyDetails } from '@/components/cari/company-details';
 import { LedgerForm } from '@/components/cari/ledger-form';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { useToast } from '@/components/ui/toast';
+import { exportToExcel } from '@/lib/excel';
+import { formatDateTR } from '@/lib/format';
 
-export default function CariPage() {
+function CariContent() {
+  const searchParams = useSearchParams();
+  const urlId = searchParams.get('id');
   const cari = useCari();
+  const { addToast } = useToast();
   const [companyFormOpen, setCompanyFormOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [ledgerFormOpen, setLedgerFormOpen] = useState(false);
   const [editingLedgerEntry, setEditingLedgerEntry] = useState<LedgerEntry | null>(null);
 
+  // Confirm dialog state
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    title: string;
+    description: string;
+    onConfirm: () => void;
+  } | null>(null);
+
   const selectedCompany = cari.companies.find(
     (c) => c.id === cari.selectedCompanyId
   );
+
+  useEffect(() => {
+    if (urlId && cari.companies.some(c => c.id === urlId)) {
+      if (cari.selectedCompanyId !== urlId) {
+        cari.selectCompany(urlId);
+      }
+    }
+  }, [urlId, cari.companies, cari.selectedCompanyId, cari.selectCompany]);
+
+  const showConfirm = (title: string, description: string, onConfirm: () => void) => {
+    setConfirmConfig({ title, description, onConfirm });
+    setConfirmOpen(true);
+  };
 
   // Firma Formu İşlemleri
   const handleAddCompany = useCallback(() => {
@@ -31,21 +60,21 @@ export default function CariPage() {
     }
   }, [selectedCompany]);
 
-  const handleDeleteCompany = useCallback(async () => {
+  const handleDeleteCompany = useCallback(() => {
     if (!selectedCompany) return;
-
-    const confirmed = window.confirm(
-      `Bu firmayı silmek istediğiniz emin misiniz?\n\n${selectedCompany.name}`
-    );
-
-    if (confirmed) {
-      try {
-        await cari.deleteCompany(selectedCompany.id);
-      } catch (error) {
-        // Hata zaten hook tarafından işleniyor
+    showConfirm(
+      'Firmayı Sil',
+      `"${selectedCompany.name}" firmasını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`,
+      async () => {
+        try {
+          await cari.deleteCompany(selectedCompany.id);
+          addToast({ title: 'Firma silindi', variant: 'success' });
+        } catch (error) {
+          addToast({ title: 'Hata', description: 'Firma silinemedi', variant: 'destructive' });
+        }
       }
-    }
-  }, [selectedCompany, cari]);
+    );
+  }, [selectedCompany, cari, addToast]);
 
   const handleSubmitCompanyForm = useCallback(
     async (data: {
@@ -55,13 +84,19 @@ export default function CariPage() {
       email?: string;
       contact_person?: string;
     }) => {
-      if (editingCompany) {
-        await cari.updateCompany(editingCompany.id, data);
-      } else {
-        await cari.createCompany(data);
+      try {
+        if (editingCompany) {
+          await cari.updateCompany(editingCompany.id, data);
+          addToast({ title: 'Firma güncellendi', variant: 'success' });
+        } else {
+          await cari.createCompany(data);
+          addToast({ title: 'Firma eklendi', variant: 'success' });
+        }
+      } catch (error) {
+        addToast({ title: 'Hata', description: 'İşlem başarısız', variant: 'destructive' });
       }
     },
-    [editingCompany, cari]
+    [editingCompany, cari, addToast]
   );
 
   // Hareket Formu İşlemleri
@@ -76,20 +111,21 @@ export default function CariPage() {
   }, []);
 
   const handleDeleteLedgerEntry = useCallback(
-    async (id: string) => {
-      const confirmed = window.confirm(
-        'Bu hareketi silmek istediğiniz emin misiniz?'
-      );
-
-      if (confirmed) {
-        try {
-          await cari.deleteLedgerEntry(id);
-        } catch (error) {
-          // Hata zaten hook tarafından işleniyor
+    (id: string) => {
+      showConfirm(
+        'Hareketi Sil',
+        'Bu hareketi silmek istediğinizden emin misiniz?',
+        async () => {
+          try {
+            await cari.deleteLedgerEntry(id);
+            addToast({ title: 'Hareket silindi', variant: 'success' });
+          } catch (error) {
+            addToast({ title: 'Hata', description: 'Hareket silinemedi', variant: 'destructive' });
+          }
         }
-      }
+      );
     },
-    [cari]
+    [cari, addToast]
   );
 
   const handleSubmitLedgerForm = useCallback(
@@ -102,75 +138,55 @@ export default function CariPage() {
       entry_type?: string;
     }) => {
       if (!cari.selectedCompanyId) return;
-
-      if (editingLedgerEntry) {
-        await cari.updateLedgerEntry(editingLedgerEntry.id, data);
-      } else {
-        await cari.createLedgerEntry({
-          company_id: cari.selectedCompanyId,
-          ...data,
-        });
+      try {
+        if (editingLedgerEntry) {
+          await cari.updateLedgerEntry(editingLedgerEntry.id, data);
+          addToast({ title: 'Hareket güncellendi', variant: 'success' });
+        } else {
+          await cari.createLedgerEntry({
+            company_id: cari.selectedCompanyId,
+            ...data,
+          });
+          addToast({ title: 'Hareket eklendi', variant: 'success' });
+        }
+      } catch (error) {
+        addToast({ title: 'Hata', description: 'İşlem başarısız', variant: 'destructive' });
       }
     },
-    [editingLedgerEntry, cari]
+    [editingLedgerEntry, cari, addToast]
   );
 
-  // CSV Export
-  const handleExportCSV = useCallback(() => {
+  // Excel Export
+  const handleExportExcel = useCallback(async () => {
     if (!selectedCompany || cari.ledgerEntries.length === 0) return;
 
-    const headers = ['SIRA', 'TARİH', 'BELGE NO', 'AÇIKLAMA', 'BORÇ', 'ALACAK', 'BAKİYE'];
-    const rows: string[][] = [];
+    try {
+      const fileName = `cari_${selectedCompany.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}`;
+      const columns = [
+        { header: 'Sıra', key: (_: any, index: number) => index + 1 },
+        { header: 'Tarih', key: (row: LedgerEntry) => new Date(row.date).toLocaleDateString('tr-TR') },
+        { header: 'Belge No', key: (row: LedgerEntry) => row.document_no || '-' },
+        { header: 'Açıklama', key: (row: LedgerEntry) => row.description || '-' },
+        { header: 'Borç (TL)', key: (row: LedgerEntry) => row.debit || 0 },
+        { header: 'Alacak (TL)', key: (row: LedgerEntry) => row.credit || 0 },
+        { header: 'Bakiye İşlem (TL)', key: (row: LedgerEntry) => row.running_balance || 0 }
+      ];
 
-    cari.ledgerEntries.forEach((entry, index) => {
-      const date = new Date(entry.date).toLocaleDateString('tr-TR');
-      rows.push([
-        (index + 1).toString(),
-        date,
-        entry.document_no || '',
-        entry.description || '',
-        entry.debit > 0 ? entry.debit.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '',
-        entry.credit > 0 ? entry.credit.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '',
-        entry.running_balance.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-      ]);
-    });
+      const success = await exportToExcel(
+        fileName,
+        'Cari Hareketler',
+        cari.ledgerEntries,
+        columns as any
+      );
 
-    // Toplam satırı
-    if (cari.ledgerSummary) {
-      rows.push([
-        '',
-        '',
-        '',
-        'TOPLAM',
-        cari.ledgerSummary.total_debit.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-        cari.ledgerSummary.total_credit.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-        cari.ledgerSummary.net.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-      ]);
+      if (success) {
+        addToast({ title: 'Dosya başarıyla Excel olarak kaydedildi', variant: 'success' });
+      }
+    } catch (err) {
+      console.error(err);
+      addToast({ title: 'Kayıt sırasında hata oluştu', variant: 'destructive' });
     }
-
-    // CSV oluştur
-    const csvContent = [
-      `Firma: ${selectedCompany.name} | Dönem: ${cari.yearFilter || 'Tüm Yıllar'}`,
-      '',
-      headers.join(','),
-      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
-    ].join('\n');
-
-    // UTF-8 BOM ile indir
-    const bom = '\uFEFF';
-    const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-
-    const fileName = `cari_${selectedCompany.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
-    link.setAttribute('href', url);
-    link.setAttribute('download', fileName);
-    link.style.visibility = 'hidden';
-
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }, [selectedCompany, cari.ledgerEntries, cari.ledgerSummary, cari.yearFilter]);
+  }, [selectedCompany, cari.ledgerEntries, addToast]);
 
   return (
     <div className="h-full flex gap-4">
@@ -198,7 +214,7 @@ export default function CariPage() {
           onAddLedgerEntry={handleAddLedgerEntry}
           onEditLedgerEntry={handleEditLedgerEntry}
           onDeleteLedgerEntry={handleDeleteLedgerEntry}
-          onExportCSV={handleExportCSV}
+          onExportCSV={handleExportExcel}
           loading={cari.loading}
         />
       </div>
@@ -220,6 +236,26 @@ export default function CariPage() {
         initialData={editingLedgerEntry || undefined}
         isLoading={cari.loading}
       />
+
+      {/* Onay Dialog */}
+      {confirmConfig && (
+        <ConfirmDialog
+          open={confirmOpen}
+          onOpenChange={setConfirmOpen}
+          title={confirmConfig.title}
+          description={confirmConfig.description}
+          confirmLabel="Sil"
+          onConfirm={confirmConfig.onConfirm}
+        />
+      )}
     </div>
+  );
+}
+
+export default function CariPage() {
+  return (
+    <Suspense fallback={<div className="flex h-64 items-center justify-center text-sm text-muted-foreground">Yükleniyor...</div>}>
+      <CariContent />
+    </Suspense>
   );
 }

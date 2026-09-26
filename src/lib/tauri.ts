@@ -12,6 +12,24 @@ export function isTauriEnvironment(): boolean {
   );
 }
 
+/**
+ * Tauri v2 komut argümanlarını varsayılan olarak camelCase bekler.
+ * Frontend'deki hook'lar snake_case anahtarlar kullandığından (örn. product_id),
+ * gönderim öncesi anahtarları camelCase'e çeviririz (product_id -> productId).
+ */
+function toCamelCaseKey(key: string): string {
+  return key.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase());
+}
+
+function toCamelCaseArgs(args?: Record<string, unknown>): Record<string, unknown> {
+  if (!args) return {};
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(args)) {
+    result[toCamelCaseKey(key)] = value;
+  }
+  return result;
+}
+
 export async function callBackend<T>(
   cmd: string,
   args?: Record<string, unknown>
@@ -21,5 +39,5 @@ export async function callBackend<T>(
   }
 
   const { invoke } = await import("@tauri-apps/api/core");
-  return invoke<T>(cmd, args);
+  return invoke<T>(cmd, toCamelCaseArgs(args));
 }

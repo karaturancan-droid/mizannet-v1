@@ -9,6 +9,8 @@ import { StockSummaryCards } from '@/components/depo/stock-summary';
 import { StockMovementForm } from '@/components/depo/stock-movement-form';
 import { ProductDetails } from '@/components/depo/product-details';
 import { Card } from '@/components/ui/card';
+import { StatCard, StatCardRow } from '@/components/ui/stat-card';
+import { formatCurrencyTRY } from '@/lib/format';
 
 export default function DepoPage() {
   const {
@@ -30,6 +32,8 @@ export default function DepoPage() {
   const [editingProduct, setEditingProduct] = useState(false);
 
   const selectedProduct = products.find((p) => p.id === selectedProductId);
+  const kritikStokSayisi = products.filter((p) => p.current_stock <= p.min_stock).length;
+  const stokDegeri = products.reduce((sum, p) => sum + p.current_stock * p.purchase_price, 0);
 
   const handleAddProduct = () => {
     setEditingProduct(false);
@@ -66,6 +70,16 @@ export default function DepoPage() {
 
   return (
     <div className="h-full flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Depo / Stok Yönetimi</h1>
+      </div>
+
+      <StatCardRow>
+        <StatCard label="Toplam Ürün" value={products.length} />
+        <StatCard label="Kritik Stok" value={kritikStokSayisi} variant={kritikStokSayisi > 0 ? 'danger' : 'default'} />
+        <StatCard label="Stok Değeri" value={formatCurrencyTRY(stokDegeri)} />
+      </StatCardRow>
+
       {error && (
         <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-2 rounded-lg text-sm">
           {error}

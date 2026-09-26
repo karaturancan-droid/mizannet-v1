@@ -5,10 +5,16 @@ import { useBildirimler } from '@/hooks/use-bildirimler';
 import { NotificationList } from '@/components/bildirimler/notification-list';
 import { NotificationFilters } from '@/components/bildirimler/notification-filters';
 import { Button } from '@/components/ui/button';
+import { StatCard, StatCardRow } from '@/components/ui/stat-card';
 import { RefreshCw } from 'lucide-react';
 
 export default function BildirimlerPage() {
-  const { refreshNotifications, loadNotifications } = useBildirimler();
+  const { notifications, refreshNotifications, loadNotifications } = useBildirimler();
+  const aktifSayisi = notifications.filter((n) => n.status === 'aktif').length;
+  const gecikmisSayisi = notifications.filter((n) => n.status === 'aktif' && (n.days_left ?? 1) < 0).length;
+  const buHaftaSayisi = notifications.filter(
+    (n) => n.status === 'aktif' && n.days_left !== undefined && n.days_left >= 0 && n.days_left <= 7
+  ).length;
   const [moduleFilter, setModuleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -25,10 +31,7 @@ export default function BildirimlerPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Bildirimler</h1>
-          <p className="text-gray-600">Önemli olayları ve son tarihler hakkında bildirim alın</p>
-        </div>
+        <h1 className="text-2xl font-bold">Bildirimler</h1>
         <Button
           onClick={handleRefresh}
           disabled={isRefreshing}
@@ -38,6 +41,12 @@ export default function BildirimlerPage() {
           Yenile
         </Button>
       </div>
+
+      <StatCardRow>
+        <StatCard label="Aktif" value={aktifSayisi} />
+        <StatCard label="Gecikmiş" value={gecikmisSayisi} variant={gecikmisSayisi > 0 ? 'danger' : 'default'} />
+        <StatCard label="Bu Hafta" value={buHaftaSayisi} variant={buHaftaSayisi > 0 ? 'warning' : 'default'} />
+      </StatCardRow>
 
       <NotificationFilters
         moduleFilter={moduleFilter}

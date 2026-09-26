@@ -1,4 +1,13 @@
+#![allow(unused)]
 use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Branch {
+    pub id: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub created_at: String,
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Company {
@@ -24,6 +33,7 @@ pub struct LedgerEntry {
     pub running_balance: f64,
     pub entry_type: Option<String>,
     pub created_at: String,
+    pub branch_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -55,6 +65,8 @@ pub struct Product {
     pub min_stock: f64,
     pub current_stock: f64,
     pub supplier: Option<String>,
+    pub image_path: Option<String>,
+    pub branch_id: Option<String>,
     pub created_at: String,
 }
 
@@ -67,6 +79,7 @@ pub struct StockMovement {
     pub quantity: f64,
     pub date: String,
     pub note: Option<String>,
+    pub branch_id: Option<String>,
     pub created_at: String,
 }
 
@@ -88,6 +101,8 @@ pub struct Vehicle {
     pub inspection_due_date: Option<String>,
     pub insurance_due_date: Option<String>,
     pub created_at: String,
+    pub category: Option<String>,
+    pub branch_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -138,6 +153,7 @@ pub struct TaxItem {
     pub receipt_path: Option<String>,
     pub notes: Option<String>,
     pub created_at: String,
+    pub branch_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -153,6 +169,20 @@ pub struct Worker {
     pub iban: Option<String>,
     pub salary: f64,
     pub contract_end_date: Option<String>,
+    pub created_at: String,
+    pub image_path: Option<String>,
+    pub branch_id: Option<String>,
+    pub phone: Option<String>,
+    pub email: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct WorkerAdvance {
+    pub id: String,
+    pub worker_id: String,
+    pub amount: f64,
+    pub date: String,
+    pub description: Option<String>,
     pub created_at: String,
 }
 
@@ -233,6 +263,7 @@ pub struct Invoice {
     pub status: String,
     pub file_path: Option<String>,
     pub created_at: String,
+    pub branch_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

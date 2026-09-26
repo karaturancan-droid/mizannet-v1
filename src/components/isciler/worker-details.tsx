@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Worker, Leave, Overtime, Payroll } from '@/hooks/use-isciler';
+import { Worker, Leave, Overtime, Payroll, WorkerAdvance } from '@/hooks/use-isciler';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +29,7 @@ interface WorkerDetailsProps {
   leaves: Leave[];
   overtimes: Overtime[];
   payrolls: Payroll[];
+  advances: WorkerAdvance[];
   onEdit: (worker: Worker) => void;
   onDelete: (id: string) => void;
   onAddLeave: () => void;
@@ -38,6 +39,8 @@ interface WorkerDetailsProps {
   onAddPayroll: () => void;
   onEditPayroll: (payroll: Payroll) => void;
   onDeletePayroll: (id: string) => void;
+  onAddAdvance: () => void;
+  onDeleteAdvance: (id: string) => void;
   onCalculateSeverance: () => Promise<void>;
   loading: boolean;
 }
@@ -47,6 +50,7 @@ export function WorkerDetails({
   leaves,
   overtimes,
   payrolls,
+  advances,
   onEdit,
   onDelete,
   onAddLeave,
@@ -56,6 +60,8 @@ export function WorkerDetails({
   onAddPayroll,
   onEditPayroll,
   onDeletePayroll,
+  onAddAdvance,
+  onDeleteAdvance,
   onCalculateSeverance,
   loading,
 }: WorkerDetailsProps) {
@@ -90,12 +96,7 @@ export function WorkerDetails({
   };
 
   const handleDeleteWorker = () => {
-    const confirmed = window.confirm(
-      `${worker.full_name} adlı işçiyi silmek istediğiniz emin misiniz?`
-    );
-    if (confirmed) {
-      onDelete(worker.id);
-    }
+    onDelete(worker.id);
   };
 
   const getStatusBadge = (exitDate?: string) => {
@@ -210,7 +211,7 @@ export function WorkerDetails({
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="leaves">İzinler</TabsTrigger>
               <TabsTrigger value="overtimes">Mesai</TabsTrigger>
-              <TabsTrigger value="payrolls">Maaş</TabsTrigger>
+              <TabsTrigger value="payrolls">Maaşlar & Avanslar</TabsTrigger>
             </TabsList>
 
             {/* İzinler Sekmesi */}
@@ -301,66 +302,119 @@ export function WorkerDetails({
               )}
             </TabsContent>
 
-            {/* Maaş Sekmesi */}
-            <TabsContent value="payrolls" className="space-y-4">
-              <Button onClick={onAddPayroll} className="w-full">
-                Maaş Ekle
-              </Button>
-              {payrolls.length === 0 ? (
-                <p className="text-muted-foreground text-center py-4">
-                  Maaş kaydı bulunmamaktadır.
-                </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>DÖNEM</TableHead>
-                        <TableHead className="text-right">BRÜT</TableHead>
-                        <TableHead className="text-right">NET</TableHead>
-                        <TableHead className="text-right">KESİNTİLER</TableHead>
-                        <TableHead>DURUM</TableHead>
-                        <TableHead className="text-right">İŞLEMLER</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {payrolls.map((payroll) => (
-                        <TableRow key={payroll.id}>
-                          <TableCell>{payroll.period}</TableCell>
-                          <TableCell className="text-right">
-                            {payroll.gross ? formatCurrencyTRY(payroll.gross) : '-'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {payroll.net ? formatCurrencyTRY(payroll.net) : '-'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {payroll.deductions ? formatCurrencyTRY(payroll.deductions) : '-'}
-                          </TableCell>
-                          <TableCell>{getPayrollStatusBadge(payroll.status)}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex gap-1 justify-end">
+            {/* Maaşlar ve Avanslar Sekmesi */}
+            <TabsContent value="payrolls" className="mt-4">
+              <div className="flex flex-col gap-6">
+                {/* Avanslar Bölümü */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-lg">Avans Kayıtları</h3>
+                    <Button variant="outline" size="sm" onClick={onAddAdvance}>
+                      + Avans Ver
+                    </Button>
+                  </div>
+                  {advances.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4 border rounded-lg">
+                      Avans kaydı bulunmamaktadır.
+                    </p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Tarih</TableHead>
+                          <TableHead>Açıklama</TableHead>
+                          <TableHead className="text-right">Tutar</TableHead>
+                          <TableHead className="w-[100px] text-right">İşlemler</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {advances.map((advance) => (
+                          <TableRow key={advance.id}>
+                            <TableCell>{formatDateTR(advance.date)}</TableCell>
+                            <TableCell>{advance.description || '-'}</TableCell>
+                            <TableCell className="text-right text-red-600 font-medium">
+                              - {formatCurrencyTRY(advance.amount)}
+                            </TableCell>
+                            <TableCell className="text-right">
                               <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="sm"
+                                className="text-destructive h-8 px-2"
+                                onClick={() => onDeleteAdvance(advance.id)}
+                              >
+                                Sil
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </div>
+
+                {/* Maaşlar Bölümü */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-lg">Maaş Bordroları</h3>
+                    <Button variant="outline" size="sm" onClick={onAddPayroll}>
+                      + Bordro Ekle
+                    </Button>
+                  </div>
+                  {payrolls.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-8 border rounded-lg">
+                      Maaş kaydı bulunmamaktadır.
+                    </p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Dönem</TableHead>
+                          <TableHead className="text-right">Brüt</TableHead>
+                          <TableHead className="text-right">Kesintiler</TableHead>
+                          <TableHead className="text-right">Net</TableHead>
+                          <TableHead>Durum</TableHead>
+                          <TableHead className="text-right">İşlemler</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {payrolls.map((payroll) => (
+                          <TableRow key={payroll.id}>
+                            <TableCell>{payroll.period}</TableCell>
+                            <TableCell className="text-right">{formatCurrencyTRY(payroll.gross || 0)}</TableCell>
+                            <TableCell className="text-right text-red-600">
+                              - {formatCurrencyTRY(payroll.deductions || 0)}
+                            </TableCell>
+                            <TableCell className="text-right font-medium text-green-600">
+                              {formatCurrencyTRY(payroll.net || 0)}
+                            </TableCell>
+                            <TableCell>
+                              {getPayrollStatusBadge(payroll.status)}
+                            </TableCell>
+                            <TableCell className="text-right space-x-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 px-2"
                                 onClick={() => onEditPayroll(payroll)}
                               >
                                 Düzenle
                               </Button>
                               <Button
-                                variant="destructive"
+                                variant="ghost"
                                 size="sm"
+                                className="text-destructive h-8 px-2"
                                 onClick={() => onDeletePayroll(payroll.id)}
                               >
                                 Sil
                               </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
                 </div>
-              )}
+              </div>
             </TabsContent>
           </Tabs>
         </CardContent>

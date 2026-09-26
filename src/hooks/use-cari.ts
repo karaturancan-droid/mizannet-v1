@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { callBackend } from '@/lib/tauri';
+import { useBranch } from '@/contexts/BranchContext';
 
 export interface Company {
   id: string;
@@ -41,6 +42,8 @@ export function useCari() {
   const [yearFilter, setYearFilter] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  const { activeBranchId } = useBranch();
 
   // Firmaları listele
   const loadCompanies = useCallback(async () => {
@@ -66,10 +69,12 @@ export function useCari() {
         callBackend<LedgerEntry[]>('list_ledger_entries', {
           company_id: companyId,
           year_filter: year,
+          branch_id: activeBranchId,
         }),
         callBackend<LedgerSummary>('get_ledger_summary', {
           company_id: companyId,
           year_filter: year,
+          branch_id: activeBranchId,
         }),
       ]);
       setLedgerEntries(entries);
@@ -189,7 +194,8 @@ export function useCari() {
     }) => {
       setError(null);
       try {
-        const newEntry = await callBackend<LedgerEntry>('create_ledger_entry', data);
+        const payload = { ...data, branch_id: activeBranchId };
+        const newEntry = await callBackend<LedgerEntry>('create_ledger_entry', payload);
         await loadLedgerData(data.company_id, yearFilter);
         return newEntry;
       } catch (err) {

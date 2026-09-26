@@ -4,13 +4,10 @@ import { useState, useCallback } from 'react';
 import { callBackend } from '@/lib/tauri';
 
 export interface ImportResult {
-  success: number;
-  errors: number;
-  details: Array<{
-    row: number;
-    error: string;
-  }>;
+  imported: number;
+  entity_type: string;
 }
+
 
 export function useExcelAktarim() {
   const [loading, setLoading] = useState(false);
@@ -74,13 +71,13 @@ export function useExcelAktarim() {
   const importData = useCallback(
     async (
       rows: Array<Record<string, string>>,
-      entityType: 'firma' | 'urun' | 'arac' | 'isci'
+      entityType: 'company' | 'product' | 'vehicle' | 'worker' | 'ledger_entry'
     ) => {
       setLoading(true);
       setError(null);
       try {
-        const result = await callBackend<ImportResult>('import_data', {
-          rows,
+        const result = await callBackend<ImportResult>('import_analyzed_data', {
+          items: rows,
           entity_type: entityType,
         });
         return result;

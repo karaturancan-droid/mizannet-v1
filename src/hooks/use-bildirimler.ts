@@ -58,10 +58,10 @@ export function useBildirimler() {
       try {
         await callBackend('update_notification_status', { id, status });
         setNotifications((prev) =>
-          prev.map((notif) => (notif.id === id ? { ...notif, status } : notif))
+          prev.map((n) => (n.id === id ? { ...n, status } : n))
         );
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Bildirim güncellenemedi';
+        const message = err instanceof Error ? err.message : 'Durum güncellenemedi';
         setError(message);
         throw err;
       } finally {
@@ -69,6 +69,26 @@ export function useBildirimler() {
       }
     },
     []
+  );
+
+  // Bildirim tarihini güncelle (Sürükle bırak için)
+  const updateNotificationDate = useCallback(
+    async (id: string, newDate: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        await callBackend('update_notification_date', { id, newDate });
+        // Refresh to get the updated days_left etc.
+        await loadNotifications();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Tarih güncellenemedi';
+        setError(message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [loadNotifications]
   );
 
   // Bildirim sil
@@ -94,6 +114,7 @@ export function useBildirimler() {
     loadNotifications,
     refreshNotifications,
     updateNotificationStatus,
+    updateNotificationDate,
     deleteNotification,
   };
 }

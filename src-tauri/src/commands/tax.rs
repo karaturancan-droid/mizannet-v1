@@ -14,10 +14,11 @@ fn map_tax_row(row: &rusqlite::Row) -> rusqlite::Result<TaxItem> {
         receipt_path: row.get(6)?,
         notes: row.get(7)?,
         created_at: row.get(8)?,
+        branch_id: row.get(9).unwrap_or(None),
     })
 }
 
-const TAX_COLS: &str = "id, type, period, amount, due_date, status, receipt_path, notes, created_at";
+const TAX_COLS: &str = "id, type, period, amount, due_date, status, receipt_path, notes, created_at, branch_id";
 
 #[tauri::command]
 pub fn create_tax_item(
@@ -27,14 +28,17 @@ pub fn create_tax_item(
     amount: f64,
     due_date: String,
     notes: Option<String>,
+    branch_id: Option<String>,
 ) -> Result<TaxItem, String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
     let id = new_id();
     let created_at = now_iso();
     let status = "bekliyor".to_string();
+    let bid = branch_id.unwrap_or_else(|| "default_branch".to_string());
+    
     conn.execute(
-        "INSERT INTO tax_items (id, type, period, amount, due_date, status, receipt_path, notes, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, NULL, ?7, ?8)",
-        rusqlite::params![id, r#type, period, amount, due_date, status, notes, created_at],
+        "INSERT INTO tax_items (id, type, period, amount, due_date, status, receipt_path, notes, created_at, branch_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, NULL, ?7, ?8, ?9)",
+        rusqlite::params![id, r#type, period, amount, due_date, status, notes, created_at, bid],
     )
     .map_err(|e| e.to_string())?;
 
@@ -48,6 +52,7 @@ pub fn create_tax_item(
         receipt_path: None,
         notes,
         created_at,
+        branch_id: Some(bid),
     })
 }
 
@@ -62,20 +67,35 @@ pub fn update_tax_item(
     status: String,
     receipt_path: Option<String>,
     notes: Option<String>,
+    branch_id: Option<String>,
 ) -> Result<(), String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
-    conn.execute(
-        "UPDATE tax_items SET type=?1, period=?2, amount=?3, due_date=?4, status=?5, receipt_path=?6, notes=?7 WHERE id=?8",
-        rusqlite::params![r#type, period, amount, due_date, status, receipt_path, notes, id],
-    )
-    .map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
+    if let Some(bid) = branch_id {
+        conn.execute(
+            "UPDATE tax_items SET type=?1, period=?2, amount=?3, due_date=?4, status=?5, receipt_path=?6, notes=?7, branch_id=?8 WHERE id=?9",
+            rusqlite::params![r#type, period, amount, due_date, status, receipt_path, notes, bid, id],
+        )
+        .map_err(|e| e.to_string())?;
+    } else {
+        conn.execute(
+            "UPDATE tax_items SET type=?1, period=?2, amount=?3, due_date=?4, status=?5, receipt_path=?6, notes=?7 WHERE id=?8",
+            rusqlite::params![r#type, period, amount, due_date, status, receipt_path, notes, id],
+        )
+        .map_err(|e| e.to_string())?;
+    }
+    
     Ok(())
 }
 
 #[tauri::command]
-pub fn list_tax_items(pool: State<DbPool>) -> Result<Vec<TaxItem>, String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
-    let sql = format!("SELECT {} FROM tax_items ORDER BY due_date ASC", TAX_COLS);
+pub fn list_tax_items(pool: State<DbPool>, branch_id: Option<String>) -> Result<Vec<TaxItem>, String> {
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
+    let mut sql = format!("SELECT {} FROM tax_items", TAX_COLS);
+    if let Some(ref bid) = branch_id {
+        sql.push_str(&format!(" WHERE branch_id = '{}'", bid));
+    }
+    sql.push_str(" ORDER BY due_date ASC");
+
     let mut stmt = conn.prepare(&sql).map_err(|e| e.to_string())?;
     let mapped = stmt.query_map([], map_tax_row).map_err(|e| e.to_string())?;
     mapped.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
@@ -83,13 +103,13 @@ pub fn list_tax_items(pool: State<DbPool>) -> Result<Vec<TaxItem>, String> {
 
 #[tauri::command]
 pub fn delete_tax_item(pool: State<DbPool>, id: String) -> Result<(), String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
     soft_delete(&conn, "tax_items", "tax_item", &id)
 }
 
 #[tauri::command]
 pub fn refresh_overdue_tax_items(pool: State<DbPool>) -> Result<(), String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
     refresh_overdue_tax_items_conn(&conn)
 }
 

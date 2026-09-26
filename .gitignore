@@ -39,3 +39,41 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# bundled desktop app / large binaries
+/Bionic/
+*.exe
+*.msi
+*.zip
+*.whl
+*.gguf
+*.dll
+*.node
+
+# abacusai agent workspace
+/.abacusai/
+
+# node modules everywhere (root + subprojects)
+node_modules/
+
+# large media / documents not part of source
+*.mp4
+*.gif
+*.pdf
+*.canvas
+
+# misc local artifacts
+/scratch/
+/strix_runs/
+/log*
+*.log
+/local-vault/
+
+# secrets: VIP license codes, WhatsApp session credentials
+/vip_kodlar.txt
+/vip_hashes.rs
+/whatsapp-worker/auth_info_baileys/
+
+# local duplicate copy of the project
+/mizannet/
+/whatsapp-worker/node_modules/

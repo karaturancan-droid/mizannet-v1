@@ -15,10 +15,12 @@ fn map_vehicle_row(row: &rusqlite::Row) -> rusqlite::Result<Vehicle> {
         inspection_due_date: row.get(7)?,
         insurance_due_date: row.get(8)?,
         created_at: row.get(9)?,
+        category: row.get(10).unwrap_or(None),
+        branch_id: row.get(11).unwrap_or(None),
     })
 }
 
-const VEHICLE_COLS: &str = "id, plate, brand, model, year, status, km, inspection_due_date, insurance_due_date, created_at";
+const VEHICLE_COLS: &str = "id, plate, brand, model, year, status, km, inspection_due_date, insurance_due_date, created_at, category, branch_id";
 
 #[tauri::command]
 pub fn create_vehicle(
@@ -31,13 +33,17 @@ pub fn create_vehicle(
     km: Option<f64>,
     inspection_due_date: Option<String>,
     insurance_due_date: Option<String>,
+    category: Option<String>,
+    branch_id: Option<String>,
 ) -> Result<Vehicle, String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
     let id = new_id();
     let created_at = now_iso();
+    let bid = branch_id.unwrap_or_else(|| "default_branch".to_string());
+    
     conn.execute(
-        "INSERT INTO vehicles (id, plate, brand, model, year, status, km, inspection_due_date, insurance_due_date, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
-        rusqlite::params![id, plate, brand, model, year, status, km, inspection_due_date, insurance_due_date, created_at],
+        "INSERT INTO vehicles (id, plate, brand, model, year, status, km, inspection_due_date, insurance_due_date, created_at, category, branch_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+        rusqlite::params![id, plate, brand, model, year, status, km, inspection_due_date, insurance_due_date, created_at, category, bid],
     )
     .map_err(|e| e.to_string())?;
 
@@ -52,6 +58,8 @@ pub fn create_vehicle(
         inspection_due_date,
         insurance_due_date,
         created_at,
+        category,
+        branch_id: Some(bid),
     })
 }
 
@@ -67,20 +75,35 @@ pub fn update_vehicle(
     km: Option<f64>,
     inspection_due_date: Option<String>,
     insurance_due_date: Option<String>,
+    category: Option<String>,
+    branch_id: Option<String>,
 ) -> Result<(), String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
-    conn.execute(
-        "UPDATE vehicles SET plate=?1, brand=?2, model=?3, year=?4, status=?5, km=?6, inspection_due_date=?7, insurance_due_date=?8 WHERE id=?9",
-        rusqlite::params![plate, brand, model, year, status, km, inspection_due_date, insurance_due_date, id],
-    )
-    .map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
+    if let Some(bid) = branch_id {
+        conn.execute(
+            "UPDATE vehicles SET plate=?1, brand=?2, model=?3, year=?4, status=?5, km=?6, inspection_due_date=?7, insurance_due_date=?8, category=?9, branch_id=?10 WHERE id=?11",
+            rusqlite::params![plate, brand, model, year, status, km, inspection_due_date, insurance_due_date, category, bid, id],
+        )
+        .map_err(|e| e.to_string())?;
+    } else {
+        conn.execute(
+            "UPDATE vehicles SET plate=?1, brand=?2, model=?3, year=?4, status=?5, km=?6, inspection_due_date=?7, insurance_due_date=?8, category=?9 WHERE id=?10",
+            rusqlite::params![plate, brand, model, year, status, km, inspection_due_date, insurance_due_date, category, id],
+        )
+        .map_err(|e| e.to_string())?;
+    }
     Ok(())
 }
 
 #[tauri::command]
-pub fn list_vehicles(pool: State<DbPool>) -> Result<Vec<Vehicle>, String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
-    let sql = format!("SELECT {} FROM vehicles ORDER BY plate ASC", VEHICLE_COLS);
+pub fn list_vehicles(pool: State<DbPool>, branch_id: Option<String>) -> Result<Vec<Vehicle>, String> {
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
+    let mut sql = format!("SELECT {} FROM vehicles", VEHICLE_COLS);
+    if let Some(ref bid) = branch_id {
+        sql.push_str(&format!(" WHERE branch_id = '{}'", bid));
+    }
+    sql.push_str(" ORDER BY plate ASC");
+
     let mut stmt = conn.prepare(&sql).map_err(|e| e.to_string())?;
     let mapped = stmt.query_map([], map_vehicle_row).map_err(|e| e.to_string())?;
     mapped.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
@@ -88,7 +111,7 @@ pub fn list_vehicles(pool: State<DbPool>) -> Result<Vec<Vehicle>, String> {
 
 #[tauri::command]
 pub fn delete_vehicle(pool: State<DbPool>, id: String) -> Result<(), String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
     soft_delete(&conn, "vehicles", "vehicle", &id)
 }
 
@@ -101,7 +124,7 @@ pub fn create_vehicle_expense(
     date: String,
     note: Option<String>,
 ) -> Result<VehicleExpense, String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
     let id = new_id();
     let created_at = now_iso();
     conn.execute(
@@ -123,7 +146,7 @@ pub fn create_vehicle_expense(
 
 #[tauri::command]
 pub fn list_vehicle_expenses(pool: State<DbPool>, vehicle_id: String) -> Result<Vec<VehicleExpense>, String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
     let mut stmt = conn
         .prepare("SELECT id, vehicle_id, type, amount, date, note, created_at FROM vehicle_expenses WHERE vehicle_id = ?1 ORDER BY date DESC")
         .map_err(|e| e.to_string())?;
@@ -145,7 +168,7 @@ pub fn list_vehicle_expenses(pool: State<DbPool>, vehicle_id: String) -> Result<
 
 #[tauri::command]
 pub fn get_vehicle_expense_summary(pool: State<DbPool>, vehicle_id: String) -> Result<VehicleExpenseSummary, String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
     let mut stmt = conn
         .prepare("SELECT COALESCE(type, 'diger'), SUM(amount) FROM vehicle_expenses WHERE vehicle_id = ?1 GROUP BY type")
         .map_err(|e| e.to_string())?;
@@ -180,7 +203,7 @@ pub fn create_tire(
     tread_depth: Option<f64>,
     change_date: Option<String>,
 ) -> Result<Tire, String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
     let id = new_id();
     let created_at = now_iso();
     conn.execute(
@@ -202,7 +225,7 @@ pub fn create_tire(
 
 #[tauri::command]
 pub fn list_tires(pool: State<DbPool>, vehicle_id: String) -> Result<Vec<Tire>, String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
     let mut stmt = conn
         .prepare("SELECT id, vehicle_id, position, dot_code, tread_depth, change_date, created_at FROM tires WHERE vehicle_id = ?1")
         .map_err(|e| e.to_string())?;

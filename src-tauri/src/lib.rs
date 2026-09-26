@@ -1,23 +1,37 @@
+#![allow(unused)]
 mod commands;
 mod db;
 mod helpers;
 mod models;
+mod ai;
+pub mod db_migrations;
+pub mod domain;
+pub mod infrastructure;
+pub mod crypto;
 
-use commands::asistan::{asistan_get_history, asistan_mesaj_gonder};
+use commands::asistan::{
+    asistan_clear_history, asistan_get_history, asistan_mesaj_gonder,
+    create_chat_session, delete_chat_session, get_chat_sessions, update_chat_session_title,
+};
 use commands::backup::{export_backup, import_backup};
 use commands::companies::{create_company, delete_company, get_company, list_companies, update_company};
+use commands::data_location::{get_data_location, reset_data_location, set_data_location};
+use commands::file_analysis::{
+    analyze_file, import_analyzed_data, parse_excel_file, ai_auto_map_excel
+};
 use commands::documents::{
-    create_document, delete_document, list_documents, list_expiring_documents, update_document,
+    create_document, delete_document, list_documents, list_expiring_documents,
+    open_document_file, save_document_file, update_document,
 };
 use commands::invoices::{
     approve_invoice, check_import_hash, create_invoice, get_invoice, list_invoices,
-    record_import_hash, reject_invoice, update_invoice,
+    record_import_hash, reject_invoice, update_invoice, upload_and_extract_invoice,
 };
 use commands::ledger::{
     create_ledger_entry, delete_ledger_entry, get_ledger_summary, list_ledger_entries,
     update_ledger_entry,
 };
-use commands::notifications::{list_notifications, refresh_notifications, update_notification_status};
+use commands::notifications::{list_notifications, refresh_notifications, update_notification_status, update_notification_date};
 use commands::products::{
     create_product, create_stock_movement, delete_product, get_stock_summary, list_products,
     list_stock_movements, update_product,
@@ -26,8 +40,9 @@ use commands::recycle_bin::{
     list_recycle_bin, permanently_delete_recycle_item, purge_expired_recycle_bin,
     restore_from_recycle_bin,
 };
-use commands::settings::{get_setting, set_setting};
+use commands::settings::{get_setting, set_setting, get_license_status, lock_database, unlock_database, activate_license};
 use commands::tax::{create_tax_item, delete_tax_item, list_tax_items, refresh_overdue_tax_items, update_tax_item};
+use ai::{test_ai_provider, text_to_speech};
 use commands::vehicles::{
     create_tire, create_vehicle, create_vehicle_expense, delete_vehicle,
     get_vehicle_expense_summary, list_tires, list_vehicle_expenses, list_vehicles, update_vehicle,
@@ -35,8 +50,18 @@ use commands::vehicles::{
 use commands::workers::{
     calculate_severance, create_leave, create_overtime, create_payroll, create_worker,
     delete_worker, list_leaves, list_overtimes, list_payrolls, list_workers, update_payroll,
-    update_worker,
+    update_worker, add_worker_advance, get_worker_advances, delete_worker_advance,
 };
+use commands::local_ai::{check_local_ai_installed, download_local_ai, start_local_ai, stop_local_ai, reset_local_ai, check_local_ai_running, detect_hardware, LocalAiProcess, list_local_models, get_local_ai_dir, search_hf_models, get_hf_model_files, download_hf_model, get_active_download_state};
+use commands::telegram::{
+    list_telegram_bots, save_telegram_bot, delete_telegram_bot,
+    list_telegram_users, list_telegram_requests, update_telegram_request_status,
+    list_telegram_messages, list_telegram_drafts, delete_telegram_draft, process_telegram_draft,
+    start_telegram_worker, stop_telegram_worker, get_telegram_worker_status
+};
+use commands::whatsapp::*;
+use commands::workspaces::{list_workspaces, create_workspace, switch_workspace, delete_workspace};
+use commands::workflow::{list_workflow_jobs, submit_excel_export_job, start_workflow_worker};
 
 use db::DbPool;
 use tauri::Manager;
@@ -46,6 +71,8 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -55,17 +82,16 @@ pub fn run() {
                 )?;
             }
 
-            let app_data_dir = app
-                .path()
-                .app_data_dir()
-                .expect("failed to resolve app data dir");
-            std::fs::create_dir_all(&app_data_dir).expect("failed to create app data dir");
 
-            let pool_inner = db::create_pool(&app_data_dir);
+            let data_dir = commands::data_location::resolve_data_dir(app.handle())
+                .expect("failed to resolve data dir");
+            std::fs::create_dir_all(&data_dir).expect("failed to create data dir");
+
+            let pool_inner = db::create_pool(&data_dir);
 
             {
                 let conn = pool_inner.get().expect("failed to get db connection");
-                db::run_migrations(&conn).expect("failed to run migrations");
+                db_migrations::run_migrations(&conn).expect("failed to run migrations");
 
                 commands::recycle_bin::purge_expired_recycle_bin_conn(&conn)
                     .expect("failed to purge expired recycle bin items");
@@ -76,12 +102,31 @@ pub fn run() {
                 commands::notifications::refresh_notifications_conn(&conn)
                     .expect("failed to refresh notifications");
             }
+            
+            // Start telegram background worker if a bot is active
+            commands::telegram::start_worker_on_startup(app.handle().clone(), pool_inner.clone());
 
-            app.manage(DbPool(pool_inner));
+            // Start auto backup worker
+            commands::backup::start_auto_backup_worker(data_dir, pool_inner.clone());
+
+            // Start workflow worker
+            start_workflow_worker(app.handle().clone(), DbPool(std::sync::RwLock::new(pool_inner.clone())));
+
+            app.manage(DbPool(std::sync::RwLock::new(pool_inner)));
+            app.manage(LocalAiProcess(std::sync::Mutex::new(None)));
+            app.manage(commands::local_ai::DownloadState(std::sync::Mutex::new(commands::local_ai::ActiveDownloadState::default())));
+            app.manage(commands::whatsapp::WhatsAppProcess(std::sync::Mutex::new(None)));
 
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            // branches
+            commands::branches::list_branches,
+            // workspaces
+            list_workspaces,
+            create_workspace,
+            switch_workspace,
+            delete_workspace,
             // companies
             create_company,
             update_company,
@@ -136,16 +181,22 @@ pub fn run() {
             update_payroll,
             list_payrolls,
             calculate_severance,
+            add_worker_advance,
+            get_worker_advances,
+            delete_worker_advance,
             // documents
             create_document,
             update_document,
             list_documents,
             delete_document,
             list_expiring_documents,
+            save_document_file,
+            open_document_file,
             // notifications
             refresh_notifications,
             list_notifications,
             update_notification_status,
+            update_notification_date,
             // invoices
             create_invoice,
             update_invoice,
@@ -155,16 +206,85 @@ pub fn run() {
             reject_invoice,
             check_import_hash,
             record_import_hash,
-            // settings
+            upload_and_extract_invoice,
             get_setting,
             set_setting,
+            get_license_status,
+            activate_license,
+            // data location
+            get_data_location,
+            set_data_location,
+            reset_data_location,
             // backup
             export_backup,
             import_backup,
             // asistan
             asistan_get_history,
             asistan_mesaj_gonder,
+            asistan_clear_history,
+            get_chat_sessions,
+            create_chat_session,
+            update_chat_session_title,
+            delete_chat_session,
+            // ai
+            test_ai_provider,
+            text_to_speech,
+            check_local_ai_installed,
+            download_local_ai,
+            start_local_ai,
+            stop_local_ai,
+            reset_local_ai,
+            check_local_ai_running,
+            detect_hardware,
+            list_local_models,
+            get_local_ai_dir,
+            search_hf_models,
+            get_hf_model_files,
+            download_hf_model,
+            get_active_download_state,
+            // whatsapp
+            start_whatsapp_worker,
+            stop_whatsapp_worker,
+            get_whatsapp_status,
+            send_whatsapp_message,
+            logout_whatsapp,
+            sync_whatsapp_messages,
+            get_whatsapp_approvals,
+            update_whatsapp_approval,
+            // file analysis
+            analyze_file,
+            import_analyzed_data,
+            parse_excel_file,
+            ai_auto_map_excel,
+            // telegram
+            list_telegram_bots,
+            save_telegram_bot,
+            delete_telegram_bot,
+            list_telegram_users,
+            list_telegram_requests,
+            update_telegram_request_status,
+            list_telegram_messages,
+            list_telegram_drafts,
+            delete_telegram_draft,
+            start_telegram_worker,
+            stop_telegram_worker,
+            get_telegram_worker_status,
+            process_telegram_draft,
+            lock_database,
+            unlock_database,
+            list_workflow_jobs,
+            submit_excel_export_job
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while running tauri application")
+        .run(|app_handle, event| match event {
+            tauri::RunEvent::Exit => {
+                let state = app_handle.state::<commands::local_ai::LocalAiProcess>();
+                let mut guard = state.0.lock().unwrap();
+                if let Some(mut child) = guard.take() {
+                    let _ = child.kill();
+                }
+            }
+            _ => {}
+        });
 }

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 48" fill="none">
+  <!-- Sol Beyaz Rozet -->
+  <rect x="2" y="4" width="40" height="40" rx="10" fill="#FFFFFF" fill-opacity="0.96"/>
+  <!-- İzometrik Logo Sembolü -->
+  <polygon points="9.06,30.59 22.00,38.06 34.94,30.59 34.94,33.83 22.00,41.29 9.06,33.83" fill="#BDBDBD" stroke="#1E293B" stroke-width="1.5" stroke-linejoin="round"/>
+  <polygon points="13.70,19.42 14.69,18.85 22.00,23.08 29.31,18.85 30.30,19.42 30.30,31.86 27.34,33.57 27.34,30.76 22.00,25.61 16.66,30.76 16.66,33.57 13.70,31.86" fill="#9AA1A8" stroke="#1E293B" stroke-width="1.5" stroke-linejoin="round"/>
+  <polygon points="9.06,14.70 12.30,12.83 22.00,18.43 31.70,12.83 34.94,14.70 34.94,29.18 31.70,31.05 31.70,16.07 22.00,21.67 12.30,16.07 12.30,31.05 9.06,29.18" fill="#237CC8" stroke="#1E293B" stroke-width="1.5" stroke-linejoin="round"/>
+  <polygon points="22.00,9.23 28.75,13.13 22.00,17.03 15.25,13.13" fill="#BDBDBD" stroke="#1E293B" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- Tipografi -->
+  <text x="52" y="32" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-weight="700" font-size="22" letter-spacing="-0.02em" fill="#FFFFFF">Mizan<tspan font-weight="700" fill="#E3F0EE">Net</tspan></text>
+</svg>

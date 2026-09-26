@@ -5,7 +5,7 @@ import { Payroll } from '@/hooks/use-isciler';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { useToast } from '@/components/ui/toast';
 
 interface PayrollFormProps {
   open: boolean;
@@ -39,6 +40,7 @@ export function PayrollForm({
   initialData,
   isLoading,
 }: PayrollFormProps) {
+  const { addToast } = useToast();
   const [formData, setFormData] = useState({
     period: '',
     gross: '',
@@ -74,7 +76,7 @@ export function PayrollForm({
     e.preventDefault();
 
     if (!formData.period) {
-      alert('Lütfen dönem bilgisini doldurunuz.');
+      addToast({ title: 'Lütfen dönem bilgisini doldurunuz.', variant: 'destructive' });
       return;
     }
 
@@ -166,12 +168,17 @@ export function PayrollForm({
             <Label htmlFor="status">Durum</Label>
             <Select
               value={formData.status}
-              onValueChange={(value: any) =>
+              onValueChange={(value: 'taslak' | 'ödendi') =>
                 setFormData((prev) => ({ ...prev, status: value }))
               }
             >
-              <option value="taslak">Taslak</option>
-              <option value="ödendi">Ödendi</option>
+              <SelectTrigger>
+                <SelectValue placeholder="Durum Seçin" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="taslak">Taslak</SelectItem>
+                <SelectItem value="ödendi">Ödendi</SelectItem>
+              </SelectContent>
             </Select>
           </div>
 

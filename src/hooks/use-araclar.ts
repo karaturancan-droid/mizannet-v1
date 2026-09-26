@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { callBackend } from '@/lib/tauri';
+import { useBranch } from '@/contexts/BranchContext';
 
 export interface Vehicle {
   id: string;
@@ -14,6 +15,8 @@ export interface Vehicle {
   inspection_due_date?: string;
   insurance_due_date?: string;
   created_at: string;
+  category?: string;
+  branch_id?: string;
 }
 
 export interface VehicleExpense {
@@ -37,11 +40,12 @@ export interface Tire {
 }
 
 export interface VehicleExpenseSummary {
-  total_by_type: Record<string, number>;
+  by_type: { type: string; total: number }[];
   grand_total: number;
 }
 
 export function useAraclar() {
+  const { activeBranchId } = useBranch();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [vehicleExpenses, setVehicleExpenses] = useState<VehicleExpense[]>([]);
@@ -55,15 +59,15 @@ export function useAraclar() {
     setLoading(true);
     setError(null);
     try {
-      const result = await callBackend<Vehicle[]>('list_vehicles');
-      setVehicles(result);
+      const result = await callBackend<Vehicle[]>('list_vehicles', { branch_id: activeBranchId });
+      setVehicles(result || []);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Araçlar yüklenemedi';
       setError(message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activeBranchId]);
 
   // Seçili araç için masraf ve lastik verilerini yükle
   const loadVehicleData = useCallback(async (vehicleId: string) => {
@@ -81,9 +85,9 @@ export function useAraclar() {
           vehicle_id: vehicleId,
         }),
       ]);
-      setVehicleExpenses(expenses);
+      setVehicleExpenses(expenses || []);
       setVehicleExpenseSummary(summary);
-      setTires(tiresList);
+      setTires(tiresList || []);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Araç verileri yüklenemedi';
       setError(message);
@@ -112,10 +116,11 @@ export function useAraclar() {
       km?: number;
       inspection_due_date?: string;
       insurance_due_date?: string;
+      category?: string;
     }) => {
       setError(null);
       try {
-        const newVehicle = await callBackend<Vehicle>('create_vehicle', data);
+        const newVehicle = await callBackend<Vehicle>('create_vehicle', { ...data, branch_id: activeBranchId });
         setVehicles((prev) => [...prev, newVehicle].sort((a, b) => a.plate.localeCompare(b.plate)));
         return newVehicle;
       } catch (err) {
@@ -124,7 +129,7 @@ export function useAraclar() {
         throw err;
       }
     },
-    []
+    [activeBranchId]
   );
 
   // Araç güncelle
@@ -140,14 +145,15 @@ export function useAraclar() {
         km?: number;
         inspection_due_date?: string;
         insurance_due_date?: string;
+        category?: string;
       }
     ) => {
       setError(null);
       try {
-        await callBackend('update_vehicle', { id, ...data });
+        await callBackend('update_vehicle', { id, ...data, branch_id: activeBranchId });
         setVehicles((prev) =>
           prev
-            .map((v) => (v.id === id ? { ...v, ...data } : v))
+            .map((v) => (v.id === id ? { ...v, ...data, branch_id: activeBranchId ?? undefined } : v))
             .sort((a, b) => a.plate.localeCompare(b.plate))
         );
       } catch (err) {
@@ -156,7 +162,7 @@ export function useAraclar() {
         throw err;
       }
     },
-    []
+    [activeBranchId]
   );
 
   // Araç sil

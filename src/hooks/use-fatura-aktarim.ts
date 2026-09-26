@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { callBackend } from '@/lib/tauri';
+import { useBranch } from '@/contexts/BranchContext';
 
 export interface Invoice {
   id: string;
@@ -21,6 +22,8 @@ export interface Invoice {
 export function useFaturaAktarim() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  const { activeBranchId } = useBranch();
 
   // Faturayı yükle ve OCR/AI ile işle
   const uploadAndExtractInvoice = useCallback(
@@ -82,7 +85,8 @@ export function useFaturaAktarim() {
     setLoading(true);
     setError(null);
     try {
-      const result = await callBackend<Invoice>('update_invoice', { id, ...data });
+      const payload = { id, ...data, branch_id: activeBranchId };
+      const result = await callBackend<Invoice>('update_invoice', payload);
       return result;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Fatura güncellenemedi';

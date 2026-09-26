@@ -43,18 +43,18 @@ export function StockSummaryCards({ summary, loading }: StockSummaryProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{summary.critical_stock_list.length}</div>
-          {summary.critical_stock_list.length > 0 && (
+          <div className="text-2xl font-bold">{summary.critical_products.length}</div>
+          {summary.critical_products.length > 0 && (
             <div className="mt-2 space-y-1">
-              {summary.critical_stock_list.slice(0, 3).map((item) => (
-                <div key={item.product_id} className="text-xs text-muted-foreground">
-                  <span className="font-semibold">{item.product_name}</span>
+              {summary.critical_products.slice(0, 3).map((item) => (
+                <div key={item.id} className="text-xs text-muted-foreground">
+                  <span className="font-semibold">{item.name}</span>
                   <span className="ml-1">({item.current_stock}/{item.min_stock})</span>
                 </div>
               ))}
-              {summary.critical_stock_list.length > 3 && (
+              {summary.critical_products.length > 3 && (
                 <div className="text-xs text-muted-foreground">
-                  +{summary.critical_stock_list.length - 3} daha...
+                  +{summary.critical_products.length - 3} daha...
                 </div>
               )}
             </div>

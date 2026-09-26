@@ -4,7 +4,7 @@ use crate::models::{Leave, Overtime, Payroll, Worker};
 use chrono::NaiveDate;
 use tauri::State;
 
-const WORKER_COLS: &str = "id, full_name, tc_no, birth_date, hire_date, exit_date, position, sgk_no, iban, salary, contract_end_date, created_at";
+const WORKER_COLS: &str = "id, full_name, tc_no, birth_date, hire_date, exit_date, position, sgk_no, iban, salary, contract_end_date, created_at, image_path, branch_id, phone, email";
 
 fn map_worker_row(row: &rusqlite::Row) -> rusqlite::Result<Worker> {
     Ok(Worker {
@@ -20,6 +20,10 @@ fn map_worker_row(row: &rusqlite::Row) -> rusqlite::Result<Worker> {
         salary: row.get(9)?,
         contract_end_date: row.get(10)?,
         created_at: row.get(11)?,
+        image_path: row.get(12)?,
+        branch_id: row.get(13)?,
+        phone: row.get(14)?,
+        email: row.get(15)?,
     })
 }
 
@@ -35,13 +39,18 @@ pub fn create_worker(
     iban: Option<String>,
     salary: f64,
     contract_end_date: Option<String>,
+    image_path: Option<String>,
+    phone: Option<String>,
+    email: Option<String>,
+    branch_id: Option<String>,
 ) -> Result<Worker, String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
     let id = new_id();
     let created_at = now_iso();
+    let bid = branch_id.unwrap_or_else(|| "default_branch".to_string()); // Normally this should fetch center_id if empty
     conn.execute(
-        "INSERT INTO workers (id, full_name, tc_no, birth_date, hire_date, exit_date, position, sgk_no, iban, salary, contract_end_date, created_at) VALUES (?1, ?2, ?3, ?4, ?5, NULL, ?6, ?7, ?8, ?9, ?10, ?11)",
-        rusqlite::params![id, full_name, tc_no, birth_date, hire_date, position, sgk_no, iban, salary, contract_end_date, created_at],
+        "INSERT INTO workers (id, full_name, tc_no, birth_date, hire_date, exit_date, position, sgk_no, iban, salary, contract_end_date, created_at, image_path, branch_id, phone, email) VALUES (?1, ?2, ?3, ?4, ?5, NULL, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)",
+        rusqlite::params![id, full_name, tc_no, birth_date, hire_date, position, sgk_no, iban, salary, contract_end_date, created_at, image_path, bid, phone, email],
     )
     .map_err(|e| e.to_string())?;
 
@@ -58,6 +67,10 @@ pub fn create_worker(
         salary,
         contract_end_date,
         created_at,
+        image_path,
+        branch_id: Some(bid),
+        phone,
+        email,
     })
 }
 
@@ -75,20 +88,100 @@ pub fn update_worker(
     iban: Option<String>,
     salary: f64,
     contract_end_date: Option<String>,
+    image_path: Option<String>,
+    phone: Option<String>,
+    email: Option<String>,
+    branch_id: Option<String>,
 ) -> Result<(), String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
+    
+    if let Some(bid) = branch_id {
+        conn.execute(
+            "UPDATE workers SET full_name=?1, tc_no=?2, birth_date=?3, hire_date=?4, exit_date=?5, position=?6, sgk_no=?7, iban=?8, salary=?9, contract_end_date=?10, image_path=?11, branch_id=?12, phone=?13, email=?14 WHERE id=?15",
+            rusqlite::params![full_name, tc_no, birth_date, hire_date, exit_date, position, sgk_no, iban, salary, contract_end_date, image_path, bid, phone, email, id],
+        )
+        .map_err(|e| e.to_string())?;
+    } else {
+        conn.execute(
+            "UPDATE workers SET full_name=?1, tc_no=?2, birth_date=?3, hire_date=?4, exit_date=?5, position=?6, sgk_no=?7, iban=?8, salary=?9, contract_end_date=?10, image_path=?11, phone=?12, email=?13 WHERE id=?14",
+            rusqlite::params![full_name, tc_no, birth_date, hire_date, exit_date, position, sgk_no, iban, salary, contract_end_date, image_path, phone, email, id],
+        )
+        .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+fn map_advance_row(row: &rusqlite::Row) -> rusqlite::Result<crate::models::WorkerAdvance> {
+    Ok(crate::models::WorkerAdvance {
+        id: row.get(0)?,
+        worker_id: row.get(1)?,
+        amount: row.get(2)?,
+        date: row.get(3)?,
+        description: row.get(4)?,
+        created_at: row.get(5)?,
+    })
+}
+
+#[tauri::command]
+pub fn add_worker_advance(
+    pool: State<DbPool>,
+    worker_id: String,
+    amount: f64,
+    date: String,
+    description: Option<String>,
+) -> Result<crate::models::WorkerAdvance, String> {
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
+    let id = new_id();
+    let created_at = now_iso();
     conn.execute(
-        "UPDATE workers SET full_name=?1, tc_no=?2, birth_date=?3, hire_date=?4, exit_date=?5, position=?6, sgk_no=?7, iban=?8, salary=?9, contract_end_date=?10 WHERE id=?11",
-        rusqlite::params![full_name, tc_no, birth_date, hire_date, exit_date, position, sgk_no, iban, salary, contract_end_date, id],
+        "INSERT INTO worker_advances (id, worker_id, amount, date, description, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        rusqlite::params![id, worker_id, amount, date, description, created_at],
     )
     .map_err(|e| e.to_string())?;
+
+    Ok(crate::models::WorkerAdvance {
+        id,
+        worker_id,
+        amount,
+        date,
+        description,
+        created_at,
+    })
+}
+
+#[tauri::command]
+pub fn get_worker_advances(
+    pool: State<DbPool>,
+    worker_id: String,
+) -> Result<Vec<crate::models::WorkerAdvance>, String> {
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
+    let mut stmt = conn
+        .prepare("SELECT id, worker_id, amount, date, description, created_at FROM worker_advances WHERE worker_id = ?1 ORDER BY date DESC")
+        .map_err(|e| e.to_string())?;
+    let mapped = stmt
+        .query_map([worker_id], map_advance_row)
+        .map_err(|e| e.to_string())?;
+    mapped.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn delete_worker_advance(pool: State<DbPool>, id: String) -> Result<(), String> {
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
+    conn.execute("DELETE FROM worker_advances WHERE id = ?1", [id])
+        .map_err(|e| e.to_string())?;
     Ok(())
 }
 
 #[tauri::command]
-pub fn list_workers(pool: State<DbPool>) -> Result<Vec<Worker>, String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
-    let sql = format!("SELECT {} FROM workers ORDER BY full_name ASC", WORKER_COLS);
+pub fn list_workers(pool: State<DbPool>, branch_id: Option<String>) -> Result<Vec<Worker>, String> {
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
+    
+    let mut sql = format!("SELECT {} FROM workers", WORKER_COLS);
+    if let Some(ref bid) = branch_id {
+        sql.push_str(&format!(" WHERE branch_id = '{}'", bid));
+    }
+    sql.push_str(" ORDER BY full_name ASC");
+
     let mut stmt = conn.prepare(&sql).map_err(|e| e.to_string())?;
     let mapped = stmt.query_map([], map_worker_row).map_err(|e| e.to_string())?;
     mapped.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
@@ -96,7 +189,7 @@ pub fn list_workers(pool: State<DbPool>) -> Result<Vec<Worker>, String> {
 
 #[tauri::command]
 pub fn delete_worker(pool: State<DbPool>, id: String) -> Result<(), String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
     soft_delete(&conn, "workers", "worker", &id)
 }
 
@@ -109,7 +202,7 @@ pub fn create_leave(
     r#type: Option<String>,
     days: Option<f64>,
 ) -> Result<Leave, String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
     let id = new_id();
     let created_at = now_iso();
     conn.execute(
@@ -131,7 +224,7 @@ pub fn create_leave(
 
 #[tauri::command]
 pub fn list_leaves(pool: State<DbPool>, worker_id: String) -> Result<Vec<Leave>, String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
     let mut stmt = conn
         .prepare("SELECT id, worker_id, start_date, end_date, type, days, created_at FROM leaves WHERE worker_id = ?1 ORDER BY start_date DESC")
         .map_err(|e| e.to_string())?;
@@ -159,7 +252,7 @@ pub fn create_overtime(
     hours: f64,
     rate: f64,
 ) -> Result<Overtime, String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
     let id = new_id();
     let created_at = now_iso();
     conn.execute(
@@ -180,7 +273,7 @@ pub fn create_overtime(
 
 #[tauri::command]
 pub fn list_overtimes(pool: State<DbPool>, worker_id: String) -> Result<Vec<Overtime>, String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
     let mut stmt = conn
         .prepare("SELECT id, worker_id, date, hours, rate, created_at FROM overtimes WHERE worker_id = ?1 ORDER BY date DESC")
         .map_err(|e| e.to_string())?;
@@ -209,7 +302,7 @@ pub fn create_payroll(
     deductions: Option<f64>,
     status: Option<String>,
 ) -> Result<Payroll, String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
     let id = new_id();
     let created_at = now_iso();
     conn.execute(
@@ -241,7 +334,7 @@ pub fn update_payroll(
     status: Option<String>,
     receipt_path: Option<String>,
 ) -> Result<(), String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
     conn.execute(
         "UPDATE payrolls SET gross=?1, net=?2, deductions=?3, status=?4, receipt_path=?5 WHERE id=?6",
         rusqlite::params![gross, net, deductions, status, receipt_path, id],
@@ -252,7 +345,7 @@ pub fn update_payroll(
 
 #[tauri::command]
 pub fn list_payrolls(pool: State<DbPool>, worker_id: String) -> Result<Vec<Payroll>, String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
     let mut stmt = conn
         .prepare("SELECT id, worker_id, period, gross, net, deductions, status, receipt_path, created_at FROM payrolls WHERE worker_id = ?1 ORDER BY period DESC")
         .map_err(|e| e.to_string())?;
@@ -276,7 +369,9 @@ pub fn list_payrolls(pool: State<DbPool>, worker_id: String) -> Result<Vec<Payro
 
 #[tauri::command]
 pub fn calculate_severance(pool: State<DbPool>, worker_id: String) -> Result<f64, String> {
-    let conn = pool.0.get().map_err(|e| e.to_string())?;
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
+
+    // İşçi bilgilerini çek
     let (hire_date, exit_date, salary): (Option<String>, Option<String>, f64) = conn
         .query_row(
             "SELECT hire_date, exit_date, salary FROM workers WHERE id = ?1",
@@ -285,10 +380,19 @@ pub fn calculate_severance(pool: State<DbPool>, worker_id: String) -> Result<f64
         )
         .map_err(|e| e.to_string())?;
 
+    // Kıdem tazminatı tavanını çek (yoksa yasal varsayılan: 42823.50 TL)
+    let tavan: f64 = conn
+        .query_row(
+            "SELECT value FROM tax_parameters WHERE key = 'kidem_tazminati_tavan' ORDER BY year DESC LIMIT 1",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap_or(42823.50_f64);
+
     let hire = hire_date
         .as_deref()
         .and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok())
-        .ok_or_else(|| "Gecerli bir ise giris tarihi bulunamadi".to_string())?;
+        .ok_or_else(|| "Geçerli bir işe giriş tarihi bulunamadı".to_string())?;
 
     let end = match exit_date.as_deref() {
         Some(d) => NaiveDate::parse_from_str(d, "%Y-%m-%d").map_err(|e| e.to_string())?,
@@ -300,9 +404,18 @@ pub fn calculate_severance(pool: State<DbPool>, worker_id: String) -> Result<f64
         return Ok(0.0);
     }
 
-    let full_years = days_employed / 365;
-    let daily_gross = salary / 30.0;
-    let severance = (full_years as f64) * 30.0 * daily_gross;
+    // Kısmi yıl dahil toplam çalışma süresi (gün bazında, 365.25 ile böl)
+    let total_years = days_employed as f64 / 365.25;
 
-    Ok(severance)
+    // Günlük brüt maaş
+    let daily_gross = salary / 30.0;
+
+    // Yıllık kıdem tutarı = 30 günlük maaş (tavan ile karşılaştır)
+    let annual_severance_per_year = (30.0 * daily_gross).min(tavan);
+
+    // Toplam kıdem tazminatı = yıllık tutar × toplam çalışma süresi (kısmi yıl dahil)
+    let severance = annual_severance_per_year * total_years;
+
+    Ok((severance * 100.0).round() / 100.0) // 2 ondalık hassasiyet
 }
+

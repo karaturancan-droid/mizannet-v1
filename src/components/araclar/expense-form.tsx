@@ -73,7 +73,7 @@ export function ExpenseForm({
               value={formData.type}
               onChange={(e) => setFormData({ ...formData, type: e.target.value })}
               disabled={loading}
-              className="w-full px-3 py-2 border border-input rounded-md bg-background"
+              className="w-full px-3 py-2 border border-input rounded-md bg-card"
             >
               {expenseTypes.map((type) => (
                 <option key={type.value} value={type.value}>

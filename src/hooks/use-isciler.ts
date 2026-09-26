@@ -3,6 +3,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { callBackend } from '@/lib/tauri';
 
+import { useBranch } from '@/contexts/BranchContext';
+
 export interface Worker {
   id: string;
   full_name: string;
@@ -16,6 +18,10 @@ export interface Worker {
   salary: number;
   contract_end_date?: string;
   created_at: string;
+  image_path?: string;
+  branch_id?: string;
+  phone?: string;
+  email?: string;
 }
 
 export interface Leave {
@@ -49,12 +55,23 @@ export interface Payroll {
   created_at: string;
 }
 
+export interface WorkerAdvance {
+  id: string;
+  worker_id: string;
+  amount: number;
+  date: string;
+  description?: string;
+  created_at: string;
+}
+
 export function useIsciler() {
+  const { activeBranchId } = useBranch();
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [overtimes, setOvertimes] = useState<Overtime[]>([]);
   const [payrolls, setPayrolls] = useState<Payroll[]>([]);
+  const [advances, setAdvances] = useState<WorkerAdvance[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,7 +80,7 @@ export function useIsciler() {
     setLoading(true);
     setError(null);
     try {
-      const result = await callBackend<Worker[]>('list_workers');
+      const result = await callBackend<Worker[]>('list_workers', { branch_id: activeBranchId });
       setWorkers(result);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'İşçiler yüklenemedi';
@@ -71,7 +88,7 @@ export function useIsciler() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activeBranchId]);
 
   // Seçili işçi için izinleri yükle
   const loadLeaves = useCallback(async (workerId: string) => {
@@ -118,6 +135,21 @@ export function useIsciler() {
     }
   }, []);
 
+  // Seçili işçi için avansları yükle
+  const loadAdvances = useCallback(async (workerId: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await callBackend<WorkerAdvance[]>('get_worker_advances', { workerId });
+      setAdvances(result);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Avanslar yüklenemedi';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // İşçi seç ve verilerini yükle
   const selectWorker = useCallback(
     async (workerId: string) => {
@@ -126,9 +158,10 @@ export function useIsciler() {
         loadLeaves(workerId),
         loadOvertimes(workerId),
         loadPayrolls(workerId),
+        loadAdvances(workerId),
       ]);
     },
-    [loadLeaves, loadOvertimes, loadPayrolls]
+    [loadLeaves, loadOvertimes, loadPayrolls, loadAdvances]
   );
 
   // İşçi oluştur
@@ -147,7 +180,7 @@ export function useIsciler() {
     }) => {
       setError(null);
       try {
-        const newWorker = await callBackend<Worker>('create_worker', data);
+        const newWorker = await callBackend<Worker>('create_worker', { ...data, branch_id: activeBranchId });
         setWorkers((prev) => [...prev, newWorker].sort((a, b) => a.full_name.localeCompare(b.full_name)));
         return newWorker;
       } catch (err) {
@@ -156,7 +189,7 @@ export function useIsciler() {
         throw err;
       }
     },
-    []
+    [activeBranchId]
   );
 
   // İşçi güncelle
@@ -178,10 +211,10 @@ export function useIsciler() {
     ) => {
       setError(null);
       try {
-        await callBackend('update_worker', { id, ...data });
+        await callBackend('update_worker', { id, ...data, branch_id: activeBranchId });
         setWorkers((prev) =>
           prev
-            .map((w) => (w.id === id ? { ...w, ...data } : w))
+            .map((w) => (w.id === id ? { ...w, ...data, branch_id: activeBranchId ?? undefined } : w))
             .sort((a, b) => a.full_name.localeCompare(b.full_name))
         );
       } catch (err) {
@@ -190,7 +223,7 @@ export function useIsciler() {
         throw err;
       }
     },
-    []
+    [activeBranchId]
   );
 
   // İşçi sil
@@ -390,12 +423,50 @@ export function useIsciler() {
     loadWorkers();
   }, [loadWorkers]);
 
+  // İşçi avansı oluştur
+  const createAdvance = useCallback(
+    async (worker_id: string, data: { amount: number; date: string; description?: string }) => {
+      setError(null);
+      try {
+        await callBackend<WorkerAdvance>('add_worker_advance', {
+          workerId: worker_id,
+          amount: data.amount,
+          date: data.date,
+          description: data.description,
+        });
+        await loadAdvances(worker_id);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Avans eklenemedi';
+        setError(message);
+        throw err;
+      }
+    },
+    [loadAdvances]
+  );
+
+  // İşçi avansı sil
+  const deleteAdvance = useCallback(
+    async (id: string, worker_id: string) => {
+      setError(null);
+      try {
+        await callBackend('delete_worker_advance', { id });
+        await loadAdvances(worker_id);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Avans silinemedi';
+        setError(message);
+        throw err;
+      }
+    },
+    [loadAdvances]
+  );
+
   return {
     workers,
     selectedWorkerId,
     leaves,
     overtimes,
     payrolls,
+    advances,
     loading,
     error,
     selectWorker,
@@ -410,6 +481,8 @@ export function useIsciler() {
     createPayroll,
     updatePayroll,
     deletePayroll,
+    createAdvance,
+    deleteAdvance,
     loadWorkers,
   };
 }

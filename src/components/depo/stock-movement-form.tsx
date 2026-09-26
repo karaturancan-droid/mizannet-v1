@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface StockMovementFormProps {
   open: boolean;
@@ -58,18 +59,21 @@ export function StockMovementForm({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="type">Hareket Tipi *</Label>
-            <select
-              id="type"
+            <Select
               value={formData.type}
-              onChange={(e) =>
-                setFormData({ ...formData, type: e.target.value as 'giriş' | 'çıkış' })
+              onValueChange={(value: 'giriş' | 'çıkış') =>
+                setFormData({ ...formData, type: value })
               }
               disabled={loading}
-              className="w-full px-3 py-2 border border-input rounded-md bg-background"
             >
-              <option value="giriş">Giriş</option>
-              <option value="çıkış">Çıkış</option>
-            </select>
+              <SelectTrigger id="type">
+                <SelectValue placeholder="İşlem Türü" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="giriş">Giriş</SelectItem>
+                <SelectItem value="çıkış">Çıkış</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div>

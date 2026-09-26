@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { useAraclar } from '@/hooks/use-araclar';
@@ -11,6 +11,7 @@ import { VehicleExpensesTab } from '@/components/araclar/vehicle-expenses-tab';
 import { VehicleTiresTab } from '@/components/araclar/vehicle-tires-tab';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { StatCard, StatCardRow } from '@/components/ui/stat-card';
 
 export default function AraclarPage() {
   const {
@@ -33,8 +34,37 @@ export default function AraclarPage() {
   const [expenseFormOpen, setExpenseFormOpen] = useState(false);
   const [tireFormOpen, setTireFormOpen] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState(false);
+  const [filterType, setFilterType] = useState<'all' | 'aktif' | 'yaklasan-muayene' | 'yaklasan-sigorta'>('all');
 
   const selectedVehicle = vehicles.find((v) => v.id === selectedVehicleId);
+  const gunKala = (dateStr?: string) => {
+    if (!dateStr) return null;
+    const diff = Math.ceil((new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    return diff;
+  };
+  const aktifSayisi = vehicles.filter((v) => v.status === 'aktif').length;
+  const yaklasanMuayene = vehicles.filter((v) => {
+    const gun = gunKala(v.inspection_due_date);
+    return gun !== null && gun <= 30 && gun >= 0;
+  }).length;
+  const yaklasanSigorta = vehicles.filter((v) => {
+    const gun = gunKala(v.insurance_due_date);
+    return gun !== null && gun <= 30 && gun >= 0;
+  }).length;
+
+  const filteredVehicles = vehicles.filter((v) => {
+    if (filterType === 'all') return true;
+    if (filterType === 'aktif') return v.status === 'aktif';
+    if (filterType === 'yaklasan-muayene') {
+      const gun = gunKala(v.inspection_due_date);
+      return gun !== null && gun <= 30 && gun >= 0;
+    }
+    if (filterType === 'yaklasan-sigorta') {
+      const gun = gunKala(v.insurance_due_date);
+      return gun !== null && gun <= 30 && gun >= 0;
+    }
+    return true;
+  });
 
   const handleAddVehicle = () => {
     setEditingVehicle(false);
@@ -80,6 +110,40 @@ export default function AraclarPage() {
 
   return (
     <div className="h-full flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Araç Yönetimi</h1>
+      </div>
+
+      <StatCardRow>
+        <StatCard 
+          label="Toplam Araç" 
+          value={vehicles.length} 
+          onClick={() => setFilterType('all')}
+          isActive={filterType === 'all'}
+        />
+        <StatCard 
+          label="Aktif" 
+          value={aktifSayisi} 
+          variant="success" 
+          onClick={() => setFilterType('aktif')}
+          isActive={filterType === 'aktif'}
+        />
+        <StatCard 
+          label="Yaklaşan Muayene" 
+          value={yaklasanMuayene} 
+          variant={yaklasanMuayene > 0 ? 'warning' : 'default'} 
+          onClick={() => setFilterType('yaklasan-muayene')}
+          isActive={filterType === 'yaklasan-muayene'}
+        />
+        <StatCard 
+          label="Yaklaşan Sigorta" 
+          value={yaklasanSigorta} 
+          variant={yaklasanSigorta > 0 ? 'warning' : 'default'} 
+          onClick={() => setFilterType('yaklasan-sigorta')}
+          isActive={filterType === 'yaklasan-sigorta'}
+        />
+      </StatCardRow>
+
       {error && (
         <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-2 rounded-lg text-sm">
           {error}
@@ -90,7 +154,7 @@ export default function AraclarPage() {
         {/* Sol Panel - Araç Listesi */}
         <Card className="lg:col-span-1 flex flex-col p-4">
           <VehicleList
-            vehicles={vehicles}
+            vehicles={filteredVehicles}
             selectedVehicleId={selectedVehicleId}
             onSelectVehicle={selectVehicle}
             onAddVehicle={handleAddVehicle}

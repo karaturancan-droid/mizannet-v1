@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { useToast } from '@/components/ui/toast';
 
 interface OvertimeFormProps {
   open: boolean;
@@ -35,6 +36,7 @@ export function OvertimeForm({
   initialData,
   isLoading,
 }: OvertimeFormProps) {
+  const { addToast } = useToast();
   const [formData, setFormData] = useState({
     date: '',
     hours: '',
@@ -61,7 +63,7 @@ export function OvertimeForm({
     e.preventDefault();
 
     if (!formData.date || !formData.hours || !formData.rate) {
-      alert('Lütfen tüm alanları doldurunuz.');
+      addToast({ title: 'Lütfen tüm alanları doldurunuz.', variant: 'destructive' });
       return;
     }
 

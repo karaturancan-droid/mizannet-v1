@@ -24,6 +24,7 @@ export function VehicleForm({
 }: VehicleFormProps) {
   const [formData, setFormData] = useState({
     plate: initialData?.plate || '',
+    category: initialData?.category || 'Otomobil',
     brand: initialData?.brand || '',
     model: initialData?.model || '',
     year: initialData?.year?.toString() || '',
@@ -38,6 +39,7 @@ export function VehicleForm({
     try {
       await onSubmit({
         plate: formData.plate,
+        category: formData.category || undefined,
         brand: formData.brand || undefined,
         model: formData.model || undefined,
         year: formData.year ? parseInt(formData.year) : undefined,
@@ -60,16 +62,38 @@ export function VehicleForm({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="plate">Plaka *</Label>
-            <Input
-              id="plate"
-              value={formData.plate}
-              onChange={(e) => setFormData({ ...formData, plate: e.target.value })}
-              required
-              disabled={loading}
-              placeholder="34ABC1234"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="plate">Plaka *</Label>
+              <Input
+                id="plate"
+                value={formData.plate}
+                onChange={(e) => setFormData({ ...formData, plate: e.target.value })}
+                required
+                disabled={loading}
+                placeholder="34ABC1234"
+              />
+            </div>
+            <div>
+              <Label htmlFor="category">Araç Tipi</Label>
+              <select
+                id="category"
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                disabled={loading}
+                className="w-full px-3 py-2 border border-input rounded-md bg-card"
+              >
+                <option value="Otomobil">Otomobil</option>
+                <option value="Kamyonet">Kamyonet</option>
+                <option value="Kamyon">Kamyon</option>
+                <option value="Tır">Tır</option>
+                <option value="Traktör">Traktör</option>
+                <option value="Minibüs">Minibüs</option>
+                <option value="Otobüs">Otobüs</option>
+                <option value="Motosiklet">Motosiklet</option>
+                <option value="Diğer">Diğer</option>
+              </select>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -125,7 +149,7 @@ export function VehicleForm({
                 setFormData({ ...formData, status: e.target.value as 'aktif' | 'bakımda' | 'pasif' })
               }
               disabled={loading}
-              className="w-full px-3 py-2 border border-input rounded-md bg-background"
+              className="w-full px-3 py-2 border border-input rounded-md bg-card"
             >
               <option value="aktif">Aktif</option>
               <option value="bakımda">Bakımda</option>
