@@ -1,0 +1,87 @@
+════════════════════════════════════════════════════════════════
+MIZANNET — MOTIONVID 30 SANİYE TANITIM VİDEOSU
+════════════════════════════════════════════════════════════════
+
+▶ MOTIONVID'E YAPIŞTIRILACAK PROMPT (kutucuğa aynen kopyala):
+
+────────────────────────────────────────────────────────────────
+Create a 30-second promotional motion graphics video (16:9) for "MizanNet", a Turkish desktop business management app for mining & construction companies. Use the attached screenshots of the real app UI as the product shots, and the attached app icon as the logo.
+
+SCENE 1 (0-4s) — THE PROBLEM:
+Dark, chaotic scene. Paper receipts and invoices fall from the top of the frame and pile up messily. Bold red shaking headline appears: "3 FARKLI DEFTER. 3 FARKLI BAKİYE." Subtitle fades in: "Kağıt faturalar, kaybolan fişler, telefon trafiği… Sahanın gerçeği bu." Anxious, fast-paced mood. Hard paper-fall sound effects.
+
+SCENE 2 (4-8s) — THE SOLUTION ARRIVES:
+Cut to dark navy background (#0a0f1e). A warm light beam shines down, and the MizanNet app icon (attached) animates in with a bouncy scale, glowing soft blue. Below it, bold white text: "MizanNet" (with "Net" in orange #FF8A3D) and tagline: "SAHANIN KONTROLÜ TEK EKRANDA". Uplifting chord hit.
+
+SCENE 3 (8-13s) — DASHBOARD:
+Slide in the real dashboard screenshot (attached: dashboard.png) as a floating window with soft shadow, gentle Ken Burns zoom. Caption at bottom: "Nakit akışı, kâr, depo — hepsi anlık 📊". Highlight the revenue chart with an animated orange line trace effect.
+
+SCENE 4 (13-17s) — CARİ HESAPLAR:
+Transition to the current accounts screenshot (cari.png). An animated orange counter badge pops in top-right counting up from 0 to "₺12.500.000" labeled "TOPLAM BAKİYE". Caption: "Cari hesaplar tek listede, excel derdi bitti". Satisfying coin/count sound.
+
+SCENE 5 (17-21s) — FLEET & WORKERS:
+Quick snap-cut: vehicles screenshot (araclar.png) slides from right, then workers screenshot (isciler.png) slides up over it slightly smaller, creating a layered stack. Caption: "Filo bakımı + maaş bordrosu — tek dokunuş 🚛👷". Snappy whoosh sounds on each snap.
+
+SCENE 6 (21-25s) — AI ASSISTANT:
+Show the AI assistant screenshot (asistan.png). Animated chat bubbles appear over the empty chat area: first a blue user bubble "Faturayı yükle 📄", then a dark AI reply bubble "Toplam: ₺48.750 · KDV dahil ✓ Kategoriye işlendi" typed out letter by letter. Caption: "Yapay zeka faturayı tanır, raporu yazar 🤖". Soft keyboard typing + success ding.
+
+SCENE 7 (25-30s) — CLOSING CTA:
+Dark navy background returns. The app icon scales in with glow, "MizanNet" wordmark below, orange tagline: "SAHANIN DİJİTAL BEYNİ". Subtitle: "Verileriniz yerelde · Çevrimdışı çalışır · Tamamen Türkçe". Then an orange pill button pops in: "⬇ HEMEN İNDİR". Confident, warm outro music fade.
+
+STYLE: Modern SaaS motion graphics, dark navy theme (#0a0f1e) with orange (#FF8A3D) and blue (#2196F3) accents, rounded corners, soft glows, smooth cubic-bezier easing, Ken Burns zooms on screenshots. Narration in Turkish (male, confident, warm). Energetic corporate background music.
+────────────────────────────────────────────────────────────────
+
+
+▶ EKLENECEK GÖRSELLER (images alanı / web arayüzünde upload):
+
+1. Uygulama ikonu (logo):
+   https://raw.githubusercontent.com/karaturancan-droid/mizannet/master/promo/assets/app-icon.png
+
+2. Dashboard (Yönetim Paneli):
+   https://raw.githubusercontent.com/karaturancan-droid/mizannet/master/promo/assets/dashboard.png
+
+3. Cari Hesaplar:
+   https://raw.githubusercontent.com/karaturancan-droid/mizannet/master/promo/assets/cari.png
+
+4. Araçlar:
+   https://raw.githubusercontent.com/karaturancan-droid/mizannet/master/promo/assets/araclar.png
+
+5. İşçiler:
+   https://raw.githubusercontent.com/karaturancan-droid/mizannet/master/promo/assets/isciler.png
+
+6. AI Asistan:
+   https://raw.githubusercontent.com/karaturancan-droid/mizannet/master/promo/assets/asistan.png
+
+
+▶ MOTIONVID AYARLARI (web arayüzü / API):
+
+  - Model:            miltos-5 (veya Premium için miltos-6)
+  - Süre:             30 saniye
+  - Oran:             16:9
+  - Anlatım (Narr.):  AÇIK — Türkçe (tr), erkek ses, sıcak/güven verici
+  - Müzik:            AÇIK — enerjik kurumsal
+  - SFX:              AÇIK
+  - AI Video klipleri: off (motion graphics yeterli, daha ucuz)
+  - Render:           AÇIK (MP4 çıktısı)
+
+  API kullanıyorsanız brand_settings:
+  {
+    "brand_name": "MizanNet",
+    "primary_color": "#1E3A5F",
+    "secondary_color": "#14B8A6",
+    "accent_color": "#FF8A3D",
+    "visual_style": "modern SaaS motion graphics, dark navy theme, rounded corners, soft glows"
+  }
+
+
+▶ NOTLAR
+
+- Görseller GitHub raw linkleri olduğu için MotionVid doğrudan çekebilir
+  (kamu repo). Repo herkese açık kaldığı sürece çalışır.
+- Prompt Türkçe altyazı/başlıklar içeriyor; anlatım Türkçe seçilirse
+  MotionVid başlıkları da Türkçe üretir.
+- Sahne 4'teki sayaç ve Sahne 6'daki harf-harf yazma efektleri MotionVid'de
+  birebir çıkmayabilir; çıkmazsa "animated counter" ve "typewriter text"
+  ifadeleri prompta vurgulu şekilde tekrar yazın.
+- Süre 30 sn'yi bulamazsa/kale almassa sahneleri kısaltmak yerine
+  "exactly 30 seconds total" cümlesini promptun başına ekleyin.
