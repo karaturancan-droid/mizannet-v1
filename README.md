@@ -1,7 +1,5 @@
 <div align="center">
 
-<img src="brand/logo-full.svg" alt="MizanNet" width="320" />
-
 # MizanNet
 
 **Maden ve inşaat sektörü için masaüstü işletme yönetim uygulaması**
