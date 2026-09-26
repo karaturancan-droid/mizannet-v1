@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect } from 'react';
-import { invoke } from '@tauri-apps/api/core';
+import { callBackend } from '@/lib/tauri';
 
 export interface Branch {
   id: string;
@@ -25,7 +25,7 @@ export function BranchProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     async function loadBranches() {
       try {
-        const data = await invoke<Branch[]>('list_branches');
+        const data = await callBackend<Branch[]>('list_branches');
         setBranches(data || []);
       } catch (err) {
         console.error('Şubeler yüklenemedi:', err);

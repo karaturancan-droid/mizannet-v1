@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>MizanNet Tanıtım</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#000; font-family:'Segoe UI', Arial, sans-serif; overflow:hidden; }
+  #stage { width:1600px; height:1000px; position:relative; background:#0a0f1e; }
+
+  .scene { position:absolute; inset:0; opacity:0; pointer-events:none; }
+  .scene.active { opacity:1; }
+
+  /* ---------- Sahne 1: Kaos ---------- */
+  #s1 { background:radial-gradient(ellipse at center, #1a0d0d 0%, #000 70%); }
+  .paper {
+    position:absolute; width:220px; height:150px; background:#f5f0e6; border-radius:6px;
+    box-shadow:0 10px 30px rgba(0,0,0,.6); padding:18px; font-size:14px; color:#333;
+    transform:rotate(var(--r)); animation:fall .9s ease-in forwards; animation-delay:var(--d); opacity:0;
+  }
+  .paper::before { content:'ARSIV FISI'; font-size:9px; letter-spacing:2px; color:#a00; font-weight:bold; }
+  .paper .lines { margin-top:14px; }
+  .paper .lines div { height:7px; background:#ccc; margin-bottom:6px; border-radius:3px; }
+  @keyframes fall { from{transform:translateY(-500px) rotate(var(--r)); opacity:0} to{transform:translateY(0) rotate(var(--r)); opacity:1} }
+  .kaos-title {
+    position:absolute; top:38%; width:100%; text-align:center; font-size:64px; font-weight:900;
+    color:#ff4444; text-shadow:0 0 30px rgba(255,0,0,.5); animation:shake .12s linear infinite, popIn .6s ease-out .8s both;
+  }
+  @keyframes shake { 0%,100%{transform:translate(0,0)} 25%{transform:translate(-3px,2px)} 75%{transform:translate(3px,-2px)} }
+  @keyframes popIn { from{opacity:0; transform:scale(.7)} to{opacity:1; transform:scale(1)} }
+  .kaos-sub {
+    position:absolute; top:55%; width:100%; text-align:center; font-size:28px; color:#ccc;
+    animation:fadeUp .8s ease-out 1.6s both;
+  }
+  @keyframes fadeUp { from{opacity:0; transform:translateY(30px)} to{opacity:1; transform:translateY(0)} }
+
+  /* ---------- Sahne 2: Logo ---------- */
+  #s2 { background:radial-gradient(ellipse at center, #101c3a 0%, #050810 70%); }
+  .logo-wrap {
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center;
+    animation:logoIn 1.2s cubic-bezier(.2,.9,.3,1.2) .3s both;
+  }
+  @keyframes logoIn { from{opacity:0; transform:translate(-50%,-50%) scale(.4) rotate(-8deg)} to{opacity:1; transform:translate(-50%,-50%) scale(1) rotate(0)} }
+  .logo-wrap img { width:180px; border-radius:36px; box-shadow:0 0 80px rgba(41,150,255,.45); }
+  .logo-word { font-size:88px; font-weight:900; color:#fff; margin-top:24px; letter-spacing:-1px; }
+  .logo-word span { color:#ff8a3d; }
+  .logo-tag {
+    margin-top:28px; font-size:32px; color:#e8eefc; letter-spacing:4px; font-weight:600;
+    animation:fadeUp .8s ease-out 1.2s both;
+  }
+  .lightbeam {
+    position:absolute; top:0; left:50%; transform:translateX(-50%); width:900px; height:100%;
+    background:linear-gradient(to bottom, rgba(41,150,255,.15), transparent 70%);
+    clip-path:polygon(35% 0, 65% 0, 100% 100%, 0 100%); animation:beam 1.6s ease-out .2s both;
+  }
+  @keyframes beam { from{opacity:0} to{opacity:1} }
+
+  /* ---------- Ekran görüntüsü sahneleri ---------- */
+  .shot {
+    position:absolute; top:80px; left:200px; width:1200px; border-radius:16px; overflow:hidden;
+    box-shadow:0 40px 120px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.08);
+    animation:slideIn 1s cubic-bezier(.2,.8,.2,1) both;
+  }
+  @keyframes slideIn { from{opacity:0; transform:translateX(300px) scale(.94)} to{opacity:1; transform:translateX(0) scale(1)} }
+  .shot img { width:100%; display:block; }
+  .shot.zoom { animation:slideIn 1s both, kenburns 6s ease-out .8s both; }
+  @keyframes kenburns { from{transform:scale(1)} to{transform:scale(1.06)} }
+
+  .caption {
+    position:absolute; bottom:60px; width:100%; text-align:center; font-size:40px; font-weight:700;
+    color:#fff; text-shadow:0 4px 30px rgba(0,0,0,.9); animation:fadeUp .7s ease-out .5s both; z-index:5;
+  }
+  .caption .hl { color:#ff8a3d; }
+
+  /* ---------- Sayaç ---------- */
+  .counter {
+    position:absolute; top:120px; right:240px; background:rgba(255,138,61,.95); color:#fff;
+    padding:24px 44px; border-radius:20px; font-size:56px; font-weight:900;
+    box-shadow:0 20px 60px rgba(255,100,0,.4); animation:popIn .6s cubic-bezier(.2,.9,.3,1.4) 1s both; z-index:6;
+  }
+  .counter small { display:block; font-size:18px; font-weight:600; letter-spacing:1px; opacity:.9; }
+
+  /* ---------- Asistan balonu ---------- */
+  .bubble {
+    position:absolute; background:#1d9bf0; color:#fff; padding:20px 30px; border-radius:26px 26px 4px 26px;
+    font-size:26px; font-weight:600; box-shadow:0 15px 50px rgba(29,155,240,.4);
+    animation:bubbleIn .6s cubic-bezier(.2,.9,.3,1.3) both; z-index:6;
+  }
+  .bubble.ai { background:#232b3d; border:1px solid #35415c; border-radius:26px 26px 26px 4px; }
+  @keyframes bubbleIn { from{opacity:0; transform:translateY(24px) scale(.8)} to{opacity:1; transform:translateY(0) scale(1)} }
+
+  /* ---------- Kapanış ---------- */
+  #s7 { background:radial-gradient(ellipse at center, #101c3a 0%, #050810 75%); }
+  .final-logo { position:absolute; top:34%; left:50%; transform:translate(-50%,-50%); text-align:center; animation:logoIn 1s cubic-bezier(.2,.9,.3,1.2) .2s both; }
+  .final-logo img { width:200px; border-radius:40px; box-shadow:0 0 100px rgba(41,150,255,.55); }
+  .final-name { font-size:72px; font-weight:900; color:#fff; margin-top:26px; }
+  .final-name span { color:#ff8a3d; }
+  .final-tag { font-size:40px; color:#ff8a3d; font-weight:800; margin-top:30px; letter-spacing:2px; animation:fadeUp .7s ease-out .9s both; }
+  .final-sub { font-size:24px; color:#9fb0d0; margin-top:14px; animation:fadeUp .7s ease-out 1.3s both; }
+  .final-cta {
+    display:inline-block; margin-top:36px; background:linear-gradient(90deg,#ff8a3d,#ff5e00); color:#fff;
+    padding:18px 52px; border-radius:50px; font-size:26px; font-weight:800; letter-spacing:1px;
+    box-shadow:0 15px 50px rgba(255,100,0,.45); animation:popIn .6s cubic-bezier(.2,.9,.3,1.4) 1.7s both;
+  }
+  .progress { position:absolute; bottom:0; left:0; height:5px; background:#ff8a3d; width:0; z-index:20; animation:prog 30s linear forwards; }
+  @keyframes prog { to { width:100%; } }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- SAHNE 1: KAOS (0-4s) -->
+  <div class="scene active" id="s1">
+    <div class="paper" style="--r:-12deg; --d:.1s; top:12%; left:8%"><div class="lines"><div></div><div style="width:70%"></div><div style="width:85%"></div></div></div>
+    <div class="paper" style="--r:9deg; --d:.25s; top:60%; left:15%"><div class="lines"><div></div><div style="width:60%"></div></div></div>
+    <div class="paper" style="--r:-6deg; --d:.4s; top:20%; right:10%"><div class="lines"><div style="width:90%"></div><div></div><div style="width:75%"></div></div></div>
+    <div class="paper" style="--r:14deg; --d:.55s; top:65%; right:18%"><div class="lines"><div></div><div style="width:80%"></div></div></div>
+    <div class="paper" style="--r:-18deg; --d:.7s; top:42%; left:38%"><div class="lines"><div style="width:85%"></div><div style="width:65%"></div></div></div>
+    <div class="kaos-title">3 FARKLI DEFTER.<br>3 FARKLI BAKİYE. 🤯</div>
+    <div class="kaos-sub">Kağıt faturalar, kaybolan fişler, telefon trafiği… Sahanın gerçeği bu.</div>
+  </div>
+
+  <!-- SAHNE 2: LOGO (4-8s) -->
+  <div class="scene" id="s2">
+    <div class="lightbeam"></div>
+    <div class="logo-wrap">
+      <img src="assets/app-icon.png" alt="MizanNet"><div class="logo-word">Mizan<span>Net</span></div>
+      <div class="logo-tag">SAHANIN KONTROLÜ TEK EKRANDA</div>
+    </div>
+  </div>
+
+  <!-- SAHNE 3: DASHBOARD (8-13s) -->
+  <div class="scene" id="s3">
+    <div class="shot zoom"><img src="assets/dashboard.png"></div>
+    <div class="caption">Nakit akışı, kâr, depo — <span class="hl">hepsi anlık</span> 📊</div>
+  </div>
+
+  <!-- SAHNE 4: CARİ + SAYAÇ (13-17s) -->
+  <div class="scene" id="s4">
+    <div class="shot zoom"><img src="assets/cari.png"></div>
+    <div class="counter"><small>TOPLAM BAKİYE</small><span id="cnt">0 ₺</span></div>
+    <div class="caption">Cari hesaplar tek listede, <span class="hl">excel derdi bitti</span></div>
+  </div>
+
+  <!-- SAHNE 5: ARAÇ + İŞÇİ (17-21s) -->
+  <div class="scene" id="s5">
+    <div class="shot zoom" style="animation-delay:.2s"><img src="assets/araclar.png"></div>
+    <div class="shot zoom" style="top:420px; left:420px; width:1000px; animation-delay:1.6s"><img src="assets/isciler.png"></div>
+    <div class="caption">Filo bakımı + maaş bordrosu — <span class="hl">tek dokunuş</span> 🚛👷</div>
+  </div>
+
+  <!-- SAHNE 6: AI ASİSTAN (21-25s) -->
+  <div class="scene" id="s6">
+    <div class="shot zoom"><img src="assets/asistan.png"></div>
+    <div class="bubble" style="top:170px; right:260px; animation-delay:1s">Faturayı yükle 📄</div>
+    <div class="bubble ai" style="top:280px; right:300px; animation-delay:2.2s">Toplam: 48.750 ₺ · KDV dahil ✓ Kategoriye işlendi</div>
+    <div class="caption">Yapay zeka faturayı tanır, <span class="hl">raporu yazar</span> 🤖</div>
+  </div>
+
+  <!-- SAHNE 7: KAPANIŞ (25-30s) -->
+  <div class="scene" id="s7">
+    <div class="final-logo">
+      <img src="assets/app-icon.png" alt="MizanNet">
+      <div class="final-name">Mizan<span>Net</span></div>
+      <div class="final-tag">SAHANIN DİJİTAL BEYNİ</div>
+      <div class="final-sub">Verileriniz yerelde · Çevrimdışı çalışır · Tamamen Türkçe</div>
+      <div class="final-cta">⬇ HEMEN İNDİR</div>
+    </div>
+  </div>
+
+  <div class="progress"></div>
+</div>
+
+<script>
+  const DURATIONS = [4, 4, 5, 4, 4, 4, 5]; // toplam 30s
+  const scenes = [...document.querySelectorAll('.scene')];
+  let t = 0;
+
+  // Sahne 4 sayacı
+  function animateCounter() {
+    const el = document.getElementById('cnt');
+    const target = 12500000;
+    const start = performance.now();
+    function step(now) {
+      const p = Math.min((now - start) / 1800, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = (target * eased).toLocaleString('tr-TR', {maximumFractionDigits:0}) + ' ₺';
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  scenes.forEach((s, i) => {
+    setTimeout(() => {
+      scenes.forEach(x => x.classList.remove('active'));
+      s.classList.add('active');
+      // animasyonları yeniden tetikle
+      s.querySelectorAll('.shot, .bubble, .caption, .counter').forEach(el => {
+        el.style.animation = 'none';
+        void el.offsetWidth;
+        el.style.animation = '';
+      });
+      if (i === 3) setTimeout(animateCounter, 1000);
+    }, t * 1000);
+    t += DURATIONS[i];
+  });
+</script>
+</body>
+</html>
