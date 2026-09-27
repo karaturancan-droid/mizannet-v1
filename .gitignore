@@ -16,6 +16,7 @@
 # next.js
 /.next/
 /out/
+/dist/
 
 # production
 /build
@@ -77,3 +78,18 @@ node_modules/
 # local duplicate copy of the project
 /mizannet/
 /whatsapp-worker/node_modules/
+
+# local SQLite databases (per-machine data, never shared)
+/*.db
+/src-tauri/*.db
+/src-tauri/*.db-journal
+/src-tauri/*.db-wal
+/src-tauri/*.db-shm
+
+# one-off dev/patch scripts kept out of the repo
+/patch*.py
+/refactor_db.py
+/create_test_user.js
+/generate_icons.js
+/hash_keys.py
+/script.js
