@@ -37,12 +37,29 @@ export interface ImportResult {
   entity_type: string;
 }
 
+/** Ajan aracının canlı çalışma adımı (terminal, dosya, excel, word, gorsel, veritabanı) */
+export interface AgentStep {
+  id: string;
+  tool: string;
+  detail: string;
+  status: 'running' | 'done' | 'error';
+  timestamp: string;
+}
+
+export interface AgentEventPayload {
+  session_id: string;
+  tool: string;
+  detail: string;
+  status: 'running' | 'done' | 'error';
+}
+
 export const useAsistan = (initialSessionId?: string) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(initialSessionId || null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [agentSteps, setAgentSteps] = useState<AgentStep[]>([]);
 
   // Load chat history on mount or when activeSessionId changes
   useEffect(() => {
@@ -75,6 +92,46 @@ export const useAsistan = (initialSessionId?: string) => {
           return [...prev, event.payload];
         });
         setIsLoading(false);
+      });
+      return unlisten;
+    };
+
+    let unlistenFn: (() => void) | undefined;
+    setupListener().then((fn) => {
+      unlistenFn = fn;
+    });
+
+    return () => {
+      if (unlistenFn) unlistenFn();
+    };
+  }, []);
+
+  // Listen for live agent tool steps (terminal, dosya işlemleri, excel, word...)
+  useEffect(() => {
+    const setupListener = async () => {
+      const unlisten = await listen<AgentEventPayload>('agent_event', (event) => {
+        const payload = event.payload;
+        // Aktif oturum farklıysa yine de göster (arka planda başka oturum da çalışıyor olabilir)
+        setAgentSteps((prev) => {
+          // Aynı aracın önceki 'running' adımını 'done/error' ile güncelle
+          const existingIdx = prev.findIndex(
+            (s) => s.tool === payload.tool && s.detail === payload.detail && s.status === 'running'
+          );
+          if (existingIdx >= 0) {
+            const next = [...prev];
+            next[existingIdx] = { ...next[existingIdx], status: payload.status };
+            return next;
+          }
+          const step: AgentStep = {
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            tool: payload.tool,
+            detail: payload.detail,
+            status: payload.status,
+            timestamp: new Date().toISOString(),
+          };
+          // En fazla 20 adım tut
+          return [...prev.slice(-19), step];
+        });
       });
       return unlisten;
     };
@@ -189,6 +246,7 @@ export const useAsistan = (initialSessionId?: string) => {
     try {
       await callBackend('asistan_clear_history', { session_id: activeSessionId });
       setMessages([]);
+      setAgentSteps([]);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Sohbet temizlenemedi';
       setError(errorMsg);
@@ -246,6 +304,7 @@ export const useAsistan = (initialSessionId?: string) => {
     setActiveSessionId,
     isLoading,
     error,
+    agentSteps,
     sendMessage,
     clearHistory,
     createSession,
@@ -253,4 +312,73 @@ export const useAsistan = (initialSessionId?: string) => {
     analyzeFile,
     importAnalyzedData,
   };
+};
+
+// ==================== KİTAPLIK HOOK ====================
+
+export interface LibraryDocument {
+  id: string;
+  name: string;
+  file_path: string;
+  file_type: string;
+  content_text?: string;
+  size_bytes: number;
+  created_at: string;
+}
+
+export const useLibrary = () => {
+  const [documents, setDocuments] = useState<LibraryDocument[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadDocuments = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await callBackend<LibraryDocument[]>('library_list_documents');
+      setDocuments(result || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Kitaplık yüklenemedi');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const uploadDocument = useCallback(async (file: File) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const base64 = Buffer.from(arrayBuffer).toString('base64');
+      const result = await callBackend<LibraryDocument>('library_upload_document', {
+        file_name: file.name,
+        file_data: base64,
+        file_type: file.type || 'application/octet-stream',
+      });
+      setDocuments((prev) => [result, ...prev]);
+      return result;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Dosya yüklenemedi');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const deleteDocument = useCallback(async (id: string) => {
+    setError(null);
+    try {
+      await callBackend('library_delete_document', { id });
+      setDocuments((prev) => prev.filter((d) => d.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Belge silinemedi');
+      throw err;
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDocuments();
+  }, [loadDocuments]);
+
+  return { documents, loading, error, uploadDocument, deleteDocument, loadDocuments };
 };

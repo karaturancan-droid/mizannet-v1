@@ -1,4 +1,5 @@
 #![allow(unused)]
+#![recursion_limit = "512"]
 mod commands;
 mod db;
 mod helpers;
@@ -12,12 +13,14 @@ pub mod crypto;
 use commands::asistan::{
     asistan_clear_history, asistan_get_history, asistan_mesaj_gonder,
     create_chat_session, delete_chat_session, get_chat_sessions, update_chat_session_title,
+    library_upload_document, library_list_documents, library_delete_document,
 };
 use commands::backup::{export_backup, import_backup};
 use commands::companies::{create_company, delete_company, get_company, list_companies, update_company};
 use commands::data_location::{get_data_location, reset_data_location, set_data_location};
 use commands::file_analysis::{
-    analyze_file, import_analyzed_data, parse_excel_file, ai_auto_map_excel
+    analyze_file, import_analyzed_data, parse_excel_file, ai_auto_map_excel,
+    analyze_files_batch
 };
 use commands::documents::{
     create_document, delete_document, list_documents, list_expiring_documents,
@@ -62,6 +65,25 @@ use commands::telegram::{
 use commands::whatsapp::*;
 use commands::workspaces::{list_workspaces, create_workspace, switch_workspace, delete_workspace};
 use commands::workflow::{list_workflow_jobs, submit_excel_export_job, start_workflow_worker};
+use commands::agent_tools::{
+    agent_run_terminal, agent_list_dir, agent_read_file, agent_write_file, agent_move_path,
+    agent_copy_path, agent_delete_path, agent_search_files, agent_generate_excel,
+    agent_generate_word, agent_generate_image, agent_open_path,
+};
+use commands::auto_messenger::{
+    get_messenger_status, set_messenger_enabled, trigger_messenger_now,
+    web_login, web_verify, web_activate_license, web_logout,
+};
+use commands::bank_reconciliation::{
+    list_accounts, create_account, delete_account, get_account_balance,
+    import_bank_statement, list_bank_statement_rows, auto_match_bank_statement,
+    confirm_bank_statement_row, ignore_bank_statement_row,
+};
+use commands::gib_einvoice::{
+    gib_login, gib_check_session, gib_logout, gib_query_recipient,
+    gib_create_invoice, gib_start_sms_sign, gib_complete_sms_sign,
+    gib_list_documents, gib_download_invoice, gib_delete_draft,
+};
 
 use db::DbPool;
 use tauri::Manager;
@@ -111,6 +133,9 @@ pub fn run() {
 
             // Start workflow worker
             start_workflow_worker(app.handle().clone(), DbPool(std::sync::RwLock::new(pool_inner.clone())));
+
+            // Start auto messenger (WhatsApp/Telegram hatırlatma ve özet gönderimi)
+            commands::auto_messenger::start_auto_messenger(app.handle().clone(), pool_inner.clone());
 
             app.manage(DbPool(std::sync::RwLock::new(pool_inner)));
             app.manage(LocalAiProcess(std::sync::Mutex::new(None)));
@@ -226,6 +251,10 @@ pub fn run() {
             create_chat_session,
             update_chat_session_title,
             delete_chat_session,
+            // kitaplık
+            library_upload_document,
+            library_list_documents,
+            library_delete_document,
             // ai
             test_ai_provider,
             text_to_speech,
@@ -253,6 +282,7 @@ pub fn run() {
             update_whatsapp_approval,
             // file analysis
             analyze_file,
+            analyze_files_batch,
             import_analyzed_data,
             parse_excel_file,
             ai_auto_map_excel,
@@ -273,7 +303,50 @@ pub fn run() {
             lock_database,
             unlock_database,
             list_workflow_jobs,
-            submit_excel_export_job
+            submit_excel_export_job,
+            // ajan araçları
+            agent_run_terminal,
+            agent_list_dir,
+            agent_read_file,
+            agent_write_file,
+            agent_move_path,
+            agent_copy_path,
+            agent_delete_path,
+            agent_search_files,
+            agent_generate_excel,
+            agent_generate_word,
+            agent_generate_image,
+            agent_open_path,
+            // otomatik bildirim çalışanı
+            get_messenger_status,
+            set_messenger_enabled,
+            trigger_messenger_now,
+            // banka mutabakatı ve hesaplar
+            list_accounts,
+            create_account,
+            delete_account,
+            get_account_balance,
+            import_bank_statement,
+            list_bank_statement_rows,
+            auto_match_bank_statement,
+            confirm_bank_statement_row,
+            ignore_bank_statement_row,
+            // web sitesi entegrasyonu
+            web_login,
+            web_verify,
+            web_activate_license,
+            web_logout,
+            // GİB e-Arşiv e-Fatura
+            gib_login,
+            gib_check_session,
+            gib_logout,
+            gib_query_recipient,
+            gib_create_invoice,
+            gib_start_sms_sign,
+            gib_complete_sms_sign,
+            gib_list_documents,
+            gib_download_invoice,
+            gib_delete_draft
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application")

@@ -265,15 +265,7 @@ export default function IscilerPage() {
     [isciler, addToast]
   );
 
-  const handleCalculateSeverance = useCallback(async () => {
-    if (!isciler.selectedWorkerId) return;
-    try {
-      await isciler.calculateSeverance(isciler.selectedWorkerId);
-      addToast({ title: 'Kıdem tazminatı hesaplandı', variant: 'success' });
-    } catch (error) {
-      addToast({ title: 'Hata', description: 'Hesaplama başarısız', variant: 'destructive' });
-    }
-  }, [isciler, addToast]);
+
 
   return (
     <div className="h-full flex flex-col gap-4">
@@ -327,7 +319,6 @@ export default function IscilerPage() {
               onDeletePayroll={handleDeletePayroll}
               onAddAdvance={handleAddAdvance}
               onDeleteAdvance={handleDeleteAdvance}
-              onCalculateSeverance={handleCalculateSeverance}
               loading={isciler.loading}
             />
         </div>

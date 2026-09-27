@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { MessageList } from './message-list';
 import { InputArea } from './input-area';
+import { AgentSteps } from './agent-steps';
 import { Message, FileAnalysis } from '@/hooks/use-asistan';
 import { callBackend } from '@/lib/tauri';
 import { Info, Paperclip, Loader2, FileText, Check, X } from 'lucide-react';
@@ -20,6 +21,7 @@ import { Info, Paperclip, Loader2, FileText, Check, X } from 'lucide-react';
 interface ChatWindowProps {
   messages: Message[];
   isLoading: boolean;
+  agentSteps: import('@/hooks/use-asistan').AgentStep[];
   onSendMessage: (message: string, imageBase64?: string) => void;
   onAnalyzeFile: (fileData: string, fileName: string) => Promise<FileAnalysis>;
   onImportData: (entityType: string, items: Record<string, unknown>[]) => Promise<{ imported: number }>;
@@ -39,6 +41,7 @@ const ENTITY_LABELS: Record<string, string> = {
 export function ChatWindow({
   messages,
   isLoading,
+  agentSteps,
   onSendMessage,
   onAnalyzeFile,
   onImportData,
@@ -53,7 +56,7 @@ export function ChatWindow({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleApproveAction = async () => {
-    if (selectedAction) {
+    if (selectedAction?.type === 'import_data') {
       setIsApproving(true);
       try {
         const entityType = String(selectedAction.payload.entity_type);
@@ -63,6 +66,29 @@ export function ChatWindow({
         setSelectedAction(null);
       } catch (err) {
         setAnalysisError(err instanceof Error ? err.message : 'Veri aktarılamadı');
+      } finally {
+        setIsApproving(false);
+      }
+    } else if (selectedAction?.type === 'generate_file') {
+      setIsApproving(true);
+      try {
+        const fileName = (selectedAction.payload.file_name as string) || 'dosya.txt';
+        const content = (selectedAction.payload.content as string) || '';
+        const mimeType = (selectedAction.payload.mime_type as string) || 'text/plain';
+
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        setSelectedAction(null);
+      } catch (err) {
+        setAnalysisError('Dosya oluşturulamadı');
       } finally {
         setIsApproving(false);
       }
@@ -165,7 +191,14 @@ export function ChatWindow({
           
           <MessageList messages={messages} isLoading={isLoading} onActionClick={setSelectedAction} />
         </div>
-        
+
+        {/* Canlı ajan adımları (terminal, dosya, excel, word, görsel, veritabanı) */}
+        {agentSteps.length > 0 && (
+          <div className="shrink-0 px-4">
+            <AgentSteps steps={agentSteps} visible />
+          </div>
+        )}
+
         <div className="w-full max-w-3xl mx-auto px-4 pb-4 shrink-0">
           <InputArea 
             onSendMessage={onSendMessage} 

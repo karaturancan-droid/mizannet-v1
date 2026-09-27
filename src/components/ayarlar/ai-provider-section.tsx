@@ -18,9 +18,34 @@ import {
   Eye,
   EyeOff,
   ExternalLink,
+  ChevronDown,
+  Gift,
 } from 'lucide-react';
 
 type Provider = 'local' | 'nvidia' | 'google';
+
+interface ModelOption {
+  id: string;
+  name: string;
+  free: boolean;
+  description: string;
+}
+
+const NVIDIA_MODELS: ModelOption[] = [
+  // ─── Görsel ve Ajan Yetenekli Modeller ───
+  { id: 'meta/llama-3.2-11b-vision-instruct', name: 'Llama 3.2 11B Vision', free: true, description: 'Hızlı görsel analiz, metin ve ajan yeteneği' },
+  { id: 'meta/llama-3.2-90b-vision-instruct', name: 'Llama 3.2 90B Vision', free: true, description: 'En güçlü görsel analiz ve mantıksal çıkarım' },
+  { id: 'microsoft/phi-3.5-vision-instruct', name: 'Phi-3.5 Vision', free: true, description: 'Kompakt, çok hızlı görsel + metin modeli' },
+];
+
+const GOOGLE_MODELS: ModelOption[] = [
+  // ─── Gemini 3.x Serisi (Görsel, Belge Analizi ve Üretimi) ───
+  { id: 'gemini-3.8-flash', name: 'Gemini 3.8 Flash', free: true, description: 'Görsel, Word, Excel Analizi ve Dosya/Belge Üretimi (En Güncel)' },
+  { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash', free: true, description: 'Görsel ve Dosya Analizi, Ajan Yeteneği' },
+  { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash', free: true, description: 'Görsel/Belge anlama ve Dosya üretme (Stabil)' },
+  { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash Lite', free: true, description: 'Daha hızlı görsel analiz ve belge işleme' },
+  { id: 'gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash (Deneysel)', free: true, description: 'Deneysel görsel ve dosya işleme' },
+];
 
 interface ProviderOption {
   id: Provider;
@@ -33,6 +58,8 @@ interface ProviderOption {
   keyPlaceholder: string;
   docsUrl: string;
   gradient: string;
+  models: ModelOption[];
+  defaultModel: string;
 }
 
 const PROVIDERS: ProviderOption[] = [
@@ -47,11 +74,13 @@ const PROVIDERS: ProviderOption[] = [
     keyPlaceholder: '',
     docsUrl: '',
     gradient: 'from-blue-500 to-cyan-500',
+    models: [],
+    defaultModel: '',
   },
   {
     id: 'nvidia',
     name: 'NVIDIA NIM',
-    description: 'NVIDIA\'nın bulut API\'si. Llama 3.1 70B gibi güçlü modeller.',
+    description: 'NVIDIA\'nın bulut API\'si. DeepSeek V4, Nemotron 3 gibi güçlü modeller ücretsiz.',
     badge: 'Bulut API',
     badgeColor: 'bg-green-100 text-green-700 border-green-200',
     icon: <Zap className="h-5 w-5" />,
@@ -59,11 +88,13 @@ const PROVIDERS: ProviderOption[] = [
     keyPlaceholder: 'nvapi-xxxxxxxxxxxxxxxxxxxx',
     docsUrl: 'https://build.nvidia.com',
     gradient: 'from-green-500 to-emerald-500',
+    models: NVIDIA_MODELS,
+    defaultModel: 'deepseek-ai/deepseek-v4.1-flash',
   },
   {
     id: 'google',
     name: 'Google AI Studio',
-    description: 'Google Gemini modelleri. Hızlı ve çok dilli.',
+    description: 'Google Gemini modelleri. Gemini 3.8 Flash ücretsiz ve en yeni.',
     badge: 'Bulut API',
     badgeColor: 'bg-orange-100 text-orange-700 border-orange-200',
     icon: <Brain className="h-5 w-5" />,
@@ -71,6 +102,8 @@ const PROVIDERS: ProviderOption[] = [
     keyPlaceholder: 'AIzaSy-xxxxxxxxxxxxxxxxxxxx',
     docsUrl: 'https://aistudio.google.com/apikey',
     gradient: 'from-orange-500 to-yellow-500',
+    models: GOOGLE_MODELS,
+    defaultModel: 'gemini-3.8-flash',
   },
 ];
 
@@ -81,6 +114,8 @@ export function AiProviderSection() {
   const [activeProvider, setActiveProvider] = useState<Provider>('local');
   const [nvidiaKey, setNvidiaKey] = useState('');
   const [googleKey, setGoogleKey] = useState('');
+  const [nvidiaModel, setNvidiaModel] = useState('deepseek-ai/deepseek-v4.1-flash');
+  const [googleModel, setGoogleModel] = useState('gemini-3.8-flash');
   const [showNvidiaKey, setShowNvidiaKey] = useState(false);
   const [showGoogleKey, setShowGoogleKey] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -97,6 +132,12 @@ export function AiProviderSection() {
 
       const gKey = await getSetting('google_api_key');
       if (gKey) setGoogleKey(gKey);
+
+      const nModel = await getSetting('nvidia_model');
+      if (nModel) setNvidiaModel(nModel);
+
+      const gModel = await getSetting('google_model');
+      if (gModel) setGoogleModel(gModel);
     } catch {
       // ignore
     }
@@ -113,8 +154,10 @@ export function AiProviderSection() {
       await setSetting('ai_provider', activeProvider);
       if (activeProvider === 'nvidia') {
         await setSetting('nvidia_api_key', nvidiaKey.trim());
+        await setSetting('nvidia_model', nvidiaModel);
       } else if (activeProvider === 'google') {
         await setSetting('google_api_key', googleKey.trim());
+        await setSetting('google_model', googleModel);
       }
       addToast({ title: 'Yapay Zeka Ayarları Kaydedildi', variant: 'success' });
     } catch (err) {
@@ -128,10 +171,12 @@ export function AiProviderSection() {
     setIsTesting(true);
     setTestResult(null);
     const currentKey = activeProvider === 'nvidia' ? nvidiaKey : activeProvider === 'google' ? googleKey : '';
+    const currentModel = activeProvider === 'nvidia' ? nvidiaModel : activeProvider === 'google' ? googleModel : '';
     try {
       const result = await invoke<string>('test_ai_provider', {
         provider: activeProvider,
         apiKey: currentKey.trim(),
+        model: currentModel,
       });
       setTestResult({ ok: true, message: result });
       addToast({ title: 'Bağlantı Başarılı!', description: result, variant: 'success' });
@@ -145,7 +190,8 @@ export function AiProviderSection() {
   };
 
   const currentKeyValue = activeProvider === 'nvidia' ? nvidiaKey : activeProvider === 'google' ? googleKey : '';
-  const selectedProvider = PROVIDERS.find((p) => p.id === activeProvider)!;
+  const selectedProviderData = PROVIDERS.find((p) => p.id === activeProvider)!;
+  const currentModels = selectedProviderData.models;
 
   return (
     <Card className="shadow-sm">
@@ -188,65 +234,111 @@ export function AiProviderSection() {
           ))}
         </div>
 
-        {/* API KEY GİRİŞİ (Yerel değilse göster) */}
+        {/* API KEY + MODEL SEÇİMİ */}
         {activeProvider !== 'local' && (
-          <div className="space-y-3 p-4 bg-muted/30 rounded-xl border animate-in fade-in duration-200">
-            <div className="flex items-center justify-between">
-              <Label className="font-semibold">{selectedProvider.keyLabel}</Label>
-              {selectedProvider.docsUrl && (
-                <a
-                  href={selectedProvider.docsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-primary flex items-center gap-1 hover:underline"
+          <div className="space-y-4 p-4 bg-muted/30 rounded-xl border animate-in fade-in duration-200">
+            {/* API KEY */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="font-semibold">{selectedProviderData.keyLabel}</Label>
+                {selectedProviderData.docsUrl && (
+                  <a
+                    href={selectedProviderData.docsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary flex items-center gap-1 hover:underline"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    Ücretsiz API Anahtarı Al
+                  </a>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    type={
+                      activeProvider === 'nvidia'
+                        ? showNvidiaKey ? 'text' : 'password'
+                        : showGoogleKey ? 'text' : 'password'
+                    }
+                    value={activeProvider === 'nvidia' ? nvidiaKey : googleKey}
+                    onChange={(e) => {
+                      if (activeProvider === 'nvidia') setNvidiaKey(e.target.value);
+                      else setGoogleKey(e.target.value);
+                      setTestResult(null);
+                    }}
+                    placeholder={selectedProviderData.keyPlaceholder}
+                    className="pr-10 font-mono text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (activeProvider === 'nvidia') setShowNvidiaKey(!showNvidiaKey);
+                      else setShowGoogleKey(!showGoogleKey);
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {(activeProvider === 'nvidia' ? showNvidiaKey : showGoogleKey) ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={handleTest}
+                  disabled={isTesting || !currentKeyValue.trim()}
+                  className="shrink-0 gap-1.5"
                 >
-                  <ExternalLink className="h-3 w-3" />
-                  API Anahtarı Al
-                </a>
-              )}
+                  {isTesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+                  {isTesting ? 'Test...' : 'Test Et'}
+                </Button>
+              </div>
             </div>
 
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Input
-                  type={
-                    activeProvider === 'nvidia'
-                      ? showNvidiaKey ? 'text' : 'password'
-                      : showGoogleKey ? 'text' : 'password'
-                  }
-                  value={activeProvider === 'nvidia' ? nvidiaKey : googleKey}
-                  onChange={(e) => {
-                    if (activeProvider === 'nvidia') setNvidiaKey(e.target.value);
-                    else setGoogleKey(e.target.value);
-                    setTestResult(null);
-                  }}
-                  placeholder={selectedProvider.keyPlaceholder}
-                  className="pr-10 font-mono text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (activeProvider === 'nvidia') setShowNvidiaKey(!showNvidiaKey);
-                    else setShowGoogleKey(!showGoogleKey);
-                  }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {(activeProvider === 'nvidia' ? showNvidiaKey : showGoogleKey) ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
+            {/* MODEL SEÇİMİ */}
+            <div className="space-y-2">
+              <Label className="font-semibold flex items-center gap-2">
+                Model Seçimi
+                <span className="text-[10px] font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                  {currentModels.filter(m => m.free).length} ücretsiz model mevcut
+                </span>
+              </Label>
+              <div className="grid gap-2">
+                {currentModels.map((model) => (
+                  <button
+                    key={model.id}
+                    onClick={() => {
+                      if (activeProvider === 'nvidia') setNvidiaModel(model.id);
+                      else setGoogleModel(model.id);
+                      setTestResult(null);
+                    }}
+                    className={`flex items-center justify-between p-3 rounded-lg border text-left transition-all text-sm ${
+                      (activeProvider === 'nvidia' ? nvidiaModel : googleModel) === model.id
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border bg-background hover:border-primary/30 hover:bg-muted/20'
+                    }`}
+                  >
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-medium truncate">{model.name}</span>
+                      <span className="text-xs text-muted-foreground mt-0.5">{model.description}</span>
+                      <span className="text-[10px] font-mono text-muted-foreground/60 mt-0.5 truncate">{model.id}</span>
+                    </div>
+                    <div className="flex items-center gap-2 ml-3 shrink-0">
+                      {model.free && (
+                        <span className="flex items-center gap-1 text-[10px] font-semibold text-green-700 bg-green-100 border border-green-200 px-1.5 py-0.5 rounded-full">
+                          <Gift className="h-2.5 w-2.5" />
+                          Ücretsiz
+                        </span>
+                      )}
+                      {(activeProvider === 'nvidia' ? nvidiaModel : googleModel) === model.id && (
+                        <CheckCircle2 className="h-4 w-4 text-primary" />
+                      )}
+                    </div>
+                  </button>
+                ))}
               </div>
-              <Button
-                variant="outline"
-                onClick={handleTest}
-                disabled={isTesting || !currentKeyValue.trim()}
-                className="shrink-0 gap-1.5"
-              >
-                {isTesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
-                {isTesting ? 'Test...' : 'Test Et'}
-              </Button>
             </div>
 
             {/* TEST SONUCU */}
@@ -257,8 +349,8 @@ export function AiProviderSection() {
                   : 'bg-red-50 border border-red-200 text-red-800'
               }`}>
                 {testResult.ok
-                  ? <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
-                  : <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                  ? <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0 text-green-600" />
+                  : <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-red-600" />
                 }
                 <p className="text-xs leading-relaxed">{testResult.message}</p>
               </div>

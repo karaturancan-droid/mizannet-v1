@@ -41,7 +41,6 @@ interface WorkerDetailsProps {
   onDeletePayroll: (id: string) => void;
   onAddAdvance: () => void;
   onDeleteAdvance: (id: string) => void;
-  onCalculateSeverance: () => Promise<void>;
   loading: boolean;
 }
 
@@ -62,12 +61,8 @@ export function WorkerDetails({
   onDeletePayroll,
   onAddAdvance,
   onDeleteAdvance,
-  onCalculateSeverance,
   loading,
 }: WorkerDetailsProps) {
-  const [severanceModalOpen, setSeveranceModalOpen] = useState(false);
-  const [severanceAmount, setSeveranceAmount] = useState<number | null>(null);
-  const [severanceLoading, setSeveranceLoading] = useState(false);
 
   if (!worker) {
     return (
@@ -80,20 +75,6 @@ export function WorkerDetails({
       </Card>
     );
   }
-
-  const handleCalculateSeverance = async () => {
-    setSeveranceLoading(true);
-    try {
-      await onCalculateSeverance();
-      // Backend'den severance amount'ı almak için ayrı bir çağrı yapılmalı
-      // Şimdilik modal açıyoruz
-      setSeveranceModalOpen(true);
-    } catch (error) {
-      // Hata zaten hook tarafından işleniyor
-    } finally {
-      setSeveranceLoading(false);
-    }
-  };
 
   const handleDeleteWorker = () => {
     onDelete(worker.id);
@@ -172,6 +153,14 @@ export function WorkerDetails({
               <p className="text-sm text-muted-foreground">Maaş</p>
               <p className="font-semibold">{formatCurrencyTRY(worker.salary)}</p>
             </div>
+            {worker.severance_pay !== undefined && worker.severance_pay !== null && (
+              <div>
+                <p className="text-sm text-muted-foreground">Kıdem Tazminatı (Güncel)</p>
+                <p className="font-semibold text-green-700 bg-green-50 px-2 py-0.5 rounded-md inline-block">
+                  {formatCurrencyTRY(worker.severance_pay)}
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-2 pt-4">
@@ -181,14 +170,6 @@ export function WorkerDetails({
               className="flex-1"
             >
               Düzenle
-            </Button>
-            <Button
-              variant="outline"
-              onClick={handleCalculateSeverance}
-              disabled={severanceLoading}
-              className="flex-1"
-            >
-              Kıdem Tazminatı Hesapla
             </Button>
             <Button
               variant="destructive"
@@ -419,26 +400,6 @@ export function WorkerDetails({
           </Tabs>
         </CardContent>
       </Card>
-
-      {/* Kıdem Tazminatı Modal */}
-      <Dialog open={severanceModalOpen} onOpenChange={setSeveranceModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Kıdem Tazminatı Hesaplaması</DialogTitle>
-            <DialogDescription>
-              {worker.full_name} için hesaplanan kıdem tazminatı
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-6">
-            <p className="text-center text-3xl font-bold">
-              {severanceAmount !== null ? formatCurrencyTRY(severanceAmount) : 'Hesaplanıyor...'}
-            </p>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setSeveranceModalOpen(false)}>Kapat</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

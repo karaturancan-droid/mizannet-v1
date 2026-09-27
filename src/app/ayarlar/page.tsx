@@ -7,6 +7,7 @@ import { AiProviderSection } from '@/components/ayarlar/ai-provider-section';
 import { DataLocationSection } from '@/components/ayarlar/data-location-section';
 import { WhatsAppSection } from '@/components/ayarlar/whatsapp-section';
 import { LicenseSection } from '@/components/ayarlar/license-section';
+import { WebAccountSection } from '@/components/ayarlar/web-account-section';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function AyarlarPage() {
@@ -18,9 +19,10 @@ export default function AyarlarPage() {
       </div>
 
       <Tabs defaultValue="profil" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="profil">Profil</TabsTrigger>
           <TabsTrigger value="lisans">Lisans</TabsTrigger>
+          <TabsTrigger value="web">Web Hesabı</TabsTrigger>
           <TabsTrigger value="yedekleme">Yedekleme</TabsTrigger>
           <TabsTrigger value="veri">Veri Konumu</TabsTrigger>
           <TabsTrigger value="api">Yapay Zeka</TabsTrigger>
@@ -32,6 +34,10 @@ export default function AyarlarPage() {
 
         <TabsContent value="lisans" className="space-y-4">
           <LicenseSection />
+        </TabsContent>
+
+        <TabsContent value="web" className="space-y-4">
+          <WebAccountSection />
         </TabsContent>
 
         <TabsContent value="yedekleme" className="space-y-4">

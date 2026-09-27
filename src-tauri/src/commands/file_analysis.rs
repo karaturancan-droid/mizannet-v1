@@ -219,6 +219,57 @@ fn extract_json(text: &str) -> Result<String, String> {
     Err("AI yanıtında JSON bulunamadı.".to_string())
 }
 
+/// Toplu fiş/görsel analiz: birden fazla dosyayı sırayla analiz eder.
+/// Her dosya bağımsız analiz edilir; başarısız olanlar hata listesinde döner.
+#[tauri::command]
+pub fn analyze_files_batch(
+    pool: State<DbPool>,
+    files: Vec<BatchFileInput>,
+) -> Result<BatchAnalysisResult, String> {
+    let mut results: Vec<BatchFileResult> = Vec::new();
+
+    for f in &files {
+        match analyze_file(pool.clone(), f.file_data.clone(), f.file_name.clone()) {
+            Ok(analysis) => results.push(BatchFileResult {
+                file_name: f.file_name.clone(),
+                success: true,
+                error: None,
+                analysis: Some(analysis),
+            }),
+            Err(e) => results.push(BatchFileResult {
+                file_name: f.file_name.clone(),
+                success: false,
+                error: Some(e),
+                analysis: None,
+            }),
+        }
+    }
+
+    let success_count = results.iter().filter(|r| r.success).count();
+    Ok(BatchAnalysisResult { results, success_count, total: files.len() })
+}
+
+#[derive(Debug, Deserialize)]
+pub struct BatchFileInput {
+    pub file_data: String,
+    pub file_name: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct BatchFileResult {
+    pub file_name: String,
+    pub success: bool,
+    pub error: Option<String>,
+    pub analysis: Option<FileAnalysis>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct BatchAnalysisResult {
+    pub results: Vec<BatchFileResult>,
+    pub success_count: usize,
+    pub total: usize,
+}
+
 /// Onaylanan çözümleme sonucunu veritabanına aktarır.
 #[tauri::command]
 pub fn import_analyzed_data(

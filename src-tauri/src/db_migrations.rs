@@ -27,6 +27,8 @@ pub fn run_migrations(conn: &Connection) -> rusqlite::Result<()> {
         (12, "workflow_jobs"),
         (13, "worker_contact"),
         (14, "branches"),
+        (15, "asistan_library"),
+        (16, "accounts_and_bank_statements"),
     ];
 
     for (version, _name) in migrations {
@@ -55,6 +57,8 @@ pub fn run_migrations(conn: &Connection) -> rusqlite::Result<()> {
                 12 => migration_12_workflow_jobs(conn)?,
                 13 => migration_13_worker_contact(conn)?,
                 14 => migration_14_branches(conn)?,
+                15 => migration_15_asistan_library(conn)?,
+                16 => migration_16_accounts_bank_statements(conn)?,
                 _ => {}
             }
             conn.execute(
@@ -753,3 +757,52 @@ fn migration_14_branches(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
     Ok(())
 }
 
+fn migration_15_asistan_library(conn: &Connection) -> rusqlite::Result<()> {
+    conn.execute_batch(
+        r#"
+        CREATE TABLE IF NOT EXISTS asistan_library (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            file_path TEXT NOT NULL,
+            file_type TEXT NOT NULL,
+            content_text TEXT,
+            size_bytes INTEGER DEFAULT 0,
+            created_at TEXT NOT NULL
+        );
+        "#,
+    )?;
+    Ok(())
+}
+
+fn migration_16_accounts_bank_statements(conn: &Connection) -> rusqlite::Result<()> {
+    conn.execute_batch(
+        r#"
+        CREATE TABLE IF NOT EXISTS accounts (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            account_type TEXT NOT NULL DEFAULT 'kasa',
+            currency TEXT NOT NULL DEFAULT 'TRY',
+            iban TEXT,
+            opening_balance REAL NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS bank_statements (
+            id TEXT PRIMARY KEY,
+            account_id TEXT,
+            date TEXT NOT NULL,
+            description TEXT NOT NULL,
+            amount REAL NOT NULL,
+            balance REAL,
+            matched_company_id TEXT,
+            matched_company_name TEXT,
+            match_score REAL DEFAULT 0,
+            status TEXT NOT NULL DEFAULT 'pending',
+            created_at TEXT NOT NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_bank_statements_status ON bank_statements(status);
+        "#,
+    )?;
+    Ok(())
+}

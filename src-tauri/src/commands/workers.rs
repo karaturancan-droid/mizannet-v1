@@ -24,6 +24,7 @@ fn map_worker_row(row: &rusqlite::Row) -> rusqlite::Result<Worker> {
         branch_id: row.get(13)?,
         phone: row.get(14)?,
         email: row.get(15)?,
+        severance_pay: None,
     })
 }
 
@@ -71,6 +72,7 @@ pub fn create_worker(
         branch_id: Some(bid),
         phone,
         email,
+        severance_pay: None,
     })
 }
 
@@ -176,6 +178,15 @@ pub fn delete_worker_advance(pool: State<DbPool>, id: String) -> Result<(), Stri
 pub fn list_workers(pool: State<DbPool>, branch_id: Option<String>) -> Result<Vec<Worker>, String> {
     let conn = pool.get_conn().map_err(|e| e.to_string())?;
     
+    // Kıdem tazminatı tavanını çek
+    let tavan: f64 = conn
+        .query_row(
+            "SELECT value FROM tax_parameters WHERE key = 'kidem_tazminati_tavan' ORDER BY year DESC LIMIT 1",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap_or(42823.50_f64);
+
     let mut sql = format!("SELECT {} FROM workers", WORKER_COLS);
     if let Some(ref bid) = branch_id {
         sql.push_str(&format!(" WHERE branch_id = '{}'", bid));
@@ -184,7 +195,34 @@ pub fn list_workers(pool: State<DbPool>, branch_id: Option<String>) -> Result<Ve
 
     let mut stmt = conn.prepare(&sql).map_err(|e| e.to_string())?;
     let mapped = stmt.query_map([], map_worker_row).map_err(|e| e.to_string())?;
-    mapped.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
+    let mut workers: Vec<Worker> = mapped.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())?;
+
+    for w in &mut workers {
+        w.severance_pay = compute_severance(w.hire_date.as_deref(), w.exit_date.as_deref(), w.salary, tavan);
+    }
+
+    Ok(workers)
+}
+
+fn compute_severance(hire_date: Option<&str>, exit_date: Option<&str>, salary: f64, tavan: f64) -> Option<f64> {
+    let hire = hire_date.and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok())?;
+    
+    let end = match exit_date {
+        Some(d) => NaiveDate::parse_from_str(d, "%Y-%m-%d").ok()?,
+        None => chrono::Utc::now().date_naive(),
+    };
+
+    let days_employed = (end - hire).num_days();
+    if days_employed <= 0 {
+        return Some(0.0);
+    }
+
+    let total_years = days_employed as f64 / 365.25;
+    let daily_gross = salary / 30.0;
+    let annual_severance_per_year = (30.0 * daily_gross).min(tavan);
+    let severance = annual_severance_per_year * total_years;
+
+    Some((severance * 100.0).round() / 100.0)
 }
 
 #[tauri::command]
@@ -371,7 +409,6 @@ pub fn list_payrolls(pool: State<DbPool>, worker_id: String) -> Result<Vec<Payro
 pub fn calculate_severance(pool: State<DbPool>, worker_id: String) -> Result<f64, String> {
     let conn = pool.get_conn().map_err(|e| e.to_string())?;
 
-    // İşçi bilgilerini çek
     let (hire_date, exit_date, salary): (Option<String>, Option<String>, f64) = conn
         .query_row(
             "SELECT hire_date, exit_date, salary FROM workers WHERE id = ?1",
@@ -380,7 +417,6 @@ pub fn calculate_severance(pool: State<DbPool>, worker_id: String) -> Result<f64
         )
         .map_err(|e| e.to_string())?;
 
-    // Kıdem tazminatı tavanını çek (yoksa yasal varsayılan: 42823.50 TL)
     let tavan: f64 = conn
         .query_row(
             "SELECT value FROM tax_parameters WHERE key = 'kidem_tazminati_tavan' ORDER BY year DESC LIMIT 1",
@@ -389,33 +425,9 @@ pub fn calculate_severance(pool: State<DbPool>, worker_id: String) -> Result<f64
         )
         .unwrap_or(42823.50_f64);
 
-    let hire = hire_date
-        .as_deref()
-        .and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok())
+    let severance = compute_severance(hire_date.as_deref(), exit_date.as_deref(), salary, tavan)
         .ok_or_else(|| "Geçerli bir işe giriş tarihi bulunamadı".to_string())?;
 
-    let end = match exit_date.as_deref() {
-        Some(d) => NaiveDate::parse_from_str(d, "%Y-%m-%d").map_err(|e| e.to_string())?,
-        None => chrono::Utc::now().date_naive(),
-    };
-
-    let days_employed = (end - hire).num_days();
-    if days_employed <= 0 {
-        return Ok(0.0);
-    }
-
-    // Kısmi yıl dahil toplam çalışma süresi (gün bazında, 365.25 ile böl)
-    let total_years = days_employed as f64 / 365.25;
-
-    // Günlük brüt maaş
-    let daily_gross = salary / 30.0;
-
-    // Yıllık kıdem tutarı = 30 günlük maaş (tavan ile karşılaştır)
-    let annual_severance_per_year = (30.0 * daily_gross).min(tavan);
-
-    // Toplam kıdem tazminatı = yıllık tutar × toplam çalışma süresi (kısmi yıl dahil)
-    let severance = annual_severance_per_year * total_years;
-
-    Ok((severance * 100.0).round() / 100.0) // 2 ondalık hassasiyet
+    Ok(severance)
 }
 

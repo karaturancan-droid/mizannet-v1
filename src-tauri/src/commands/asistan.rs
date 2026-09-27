@@ -1,6 +1,7 @@
 #![allow(unused)]
 use crate::ai::{self, ChatMessage};
 use crate::db::DbPool;
+use crate::commands::data_location;
 use serde::{Deserialize, Serialize};
 use tauri::{State, Manager, Emitter};
 
@@ -194,14 +195,22 @@ pub fn asistan_mesaj_gonder(
     let session_id_clone = session_id.clone();
     let mesaj_clone = mesaj.clone();
     let image_base64_clone = image_base64.clone();
+    let app_for_ai = app.clone();
+    let session_for_ai = session_id.clone();
     
     // Yeni thread için pool klonu
     let pool_inner = pool.0.read().unwrap().clone();
     let new_pool = DbPool(std::sync::RwLock::new(pool_inner));
 
     std::thread::spawn(move || {
-        // AI yanıtı üret (hafıza + işletme bağlamı ile)
-        let assistant_response = generate_ai_response(&new_pool, &session_id_clone, &mesaj_clone, image_base64_clone.as_deref());
+        // AI yanıtı üret (hafıza + işletme bağlamı ile) — ajan event'leri açık
+        let assistant_response = generate_ai_response_ctx(
+            &new_pool,
+            &session_id_clone,
+            &mesaj_clone,
+            image_base64_clone.as_deref(),
+            Some((&app_for_ai, &session_for_ai)),
+        );
 
         let assistant_id = uuid::Uuid::new_v4().to_string();
         let assistant_timestamp = chrono::Local::now()
@@ -255,6 +264,18 @@ pub fn asistan_clear_history(session_id: String, pool: State<DbPool>) -> Result<
 }
 
 fn generate_ai_response(pool: &DbPool, session_id: &str, user_message: &str, image_base64: Option<&str>) -> Message {
+    generate_ai_response_ctx(pool, session_id, user_message, image_base64, None)
+}
+
+/// Ajan bağlamıyla AI yanıtı üretir. `agent_ctx` verildiyse araç çalışmaları
+/// `agent_event` olarak sohbete canlı yayınlanır.
+fn generate_ai_response_ctx(
+    pool: &DbPool,
+    session_id: &str,
+    user_message: &str,
+    image_base64: Option<&str>,
+    agent_ctx: Option<(&tauri::AppHandle, &str)>,
+) -> Message {
     let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
 
     // 1) Sohbet geçmişini oku (hafıza)
@@ -266,6 +287,9 @@ fn generate_ai_response(pool: &DbPool, session_id: &str, user_message: &str, ima
 
     // Bilgi Bankası (Knowledge Base) araması
     let knowledge_context = search_knowledge_base(user_message);
+    
+    // Kitaplık belgeleri bağlamı
+    let library_context = get_library_context(pool);
 
     // 3) AI'a gönderilecek mesajları kur
     let mut messages: Vec<ChatMessage> = Vec::new();
@@ -279,6 +303,9 @@ fn generate_ai_response(pool: &DbPool, session_id: &str, user_message: &str, ima
              Eğer kullanıcı muhasebe kodları, vergi usul kanunu, iş kanunu vb. bir hukuki soru sorarsa, \
              aşağıdaki Bilgi Bankası özetini kullanarak cevap ver (kullanıcının sorusuyla eşleşen maddeler getirilmiştir):\n\
              BİLGİ BANKASI İÇERİĞİ:\n\
+             {}\n\
+             \n\
+             KİTAPLIK BELGELERİ (Kullanıcının yüklediği dosyalar):\n\
              {}\n\
              \n\
              Eğer kullanıcı sisteme veri eklemek (örneğin cari hesap, fatura, stok VEYA borç/alacak cari hareket) isterse veya bir fotoğraftaki verileri \
@@ -299,8 +326,36 @@ fn generate_ai_response(pool: &DbPool, session_id: &str, user_message: &str, ima
                }}\n\
              }}\n\
              ```\n\
-             Bu JSON bloğu sayesinde uygulama verileri otomatik olarak kaydedebilecektir.\n\n{}",
-            knowledge_context, business
+             \n\
+             Eğer kullanıcı senden bir dosya (word, excel, txt, kod vb.) üretmeni isterse (örneğin \"bunu excel olarak ver\" veya \"görsel üret\"), şu formatta bir JSON bloğu ekle (```json ile başlat):\n\
+             ```json\n\
+             {{\n\
+               \"suggested_action\": {{\n\
+                 \"type\": \"generate_file\",\n\
+                 \"description\": \"(Örn: Excel dosyası oluştur)\",\n\
+                 \"payload\": {{\n\
+                   \"file_name\": \"rapor.csv\",\n\
+                   \"content\": \"Sütun1,Sütun2\\nDeğer1,Değer2\",\n\
+                   \"mime_type\": \"text/csv\"\n\
+                 }}\n\
+               }}\n\
+             }}\n\
+             ```\n\
+             Görsel isteniyorsa SVG formatında kod üretip mime_type olarak 'image/svg+xml' kullan. Excel için CSV, Word için Markdown (.md) kullan.
+             Bu JSON bloğu sayesinde uygulama verileri otomatik olarak kaydedebilecek veya dosya olarak indirebilecektir.
+
+             AJAN YETENEKLERİ: Sen aynı zamanda bir bilgisayar ajanısın. Şu araçları gerçekten çalıştırabilirsin:
+             - Terminal komutu çalıştırma: run_terminal (command, opsiyonel working_dir)
+             - Dosya işlemleri: read_file, write_file, move_path (taşı/yeniden adlandır), copy_path (kopyala), delete_path (sil), search_files (ada göre ara), list_directory
+             - Gerçek Excel dosyası: generate_excel_file (file_name, rows: [[başlık...],[satır...]], opsiyonel sheet_name) → .xlsx olarak masaüstüne kaydeder
+             - Gerçek Word dosyası: generate_word_file (file_name, content: '# Başlık', '## Alt Başlık', '- liste' ve paragraf satırları) → .docx olarak masaüstüne kaydeder
+             - Görsel üretimi: generate_image (prompt, filename)
+             - Veritabanı: query_database (SELECT), write_database (INSERT/UPDATE/DELETE; DROP/ALTER/CREATE engellidir)
+             Kullanıcı bir dosya üretmeni, bilgisayarında bir işlem yapmanı veya veri sorgulamanı istediğinde JSON bloğu üretmek yerine doğrudan ilgili aracı çağır. Araç çalışmaları sohbette canlı olarak gösterilir. Windows sistem klasörlerine (C:\\Windows, Program Files) yazma/silme yapma.
+             Kullanıcı sohbet içinde kaydedilebilir bir dosya istemiyorsa (örn. 'sohbette göster', 'ekran görüntüsü') JSON bloğu yöntemini kullan.
+
+{}",
+            knowledge_context, library_context, business
         ),
     });
 
@@ -316,10 +371,13 @@ fn generate_ai_response(pool: &DbPool, session_id: &str, user_message: &str, ima
         content: user_message.to_string(),
     });
 
-    // 4) AI çağrısı; başarısız olursa yedek yanıt
+    // 4) AI çağrısı; başarısız olursa yedek yanıt.
+    // Ajan bağlamı varsa tool event'leri sohbete yayınlanır.
     let ai_result = if let Some(b64) = image_base64 {
         let combined_msg = format!("{}\n\nKullanıcı: {}", business, user_message);
         crate::ai::ai_chat_with_image(pool, &combined_msg, b64, "image/jpeg")
+    } else if let Some((app_handle, sess)) = agent_ctx {
+        crate::ai::ai_chat_agentic(pool, &messages, app_handle, sess)
     } else {
         ai::ai_chat(pool, &messages)
     };
@@ -453,6 +511,156 @@ fn search_knowledge_base(query: &str) -> String {
     // Take top 3 matches to avoid huge context
     for (i, (_, title, content)) in all_matches.iter().take(3).enumerate() {
         context.push_str(&format!("--- Madde {} ---\nBaşlık: {}\nİçerik: {}\n\n", i+1, title, content));
+    }
+    
+    context
+}
+
+// ==================== KİTAPLIK (LIBRARY) ====================
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct LibraryDocument {
+    pub id: String,
+    pub name: String,
+    pub file_path: String,
+    pub file_type: String,
+    pub content_text: Option<String>,
+    pub size_bytes: i64,
+    pub created_at: String,
+}
+
+#[tauri::command]
+pub fn library_upload_document(
+    app: tauri::AppHandle,
+    pool: State<DbPool>,
+    file_name: String,
+    file_data: String,  // base64
+    file_type: String,
+) -> Result<LibraryDocument, String> {
+    use base64::Engine;
+    
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(&file_data)
+        .map_err(|e| format!("Dosya çözülemedi: {}", e))?;
+    
+    let id = uuid::Uuid::new_v4().to_string();
+    let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let size_bytes = bytes.len() as i64;
+    
+    // Save the file
+    let data_dir = data_location::resolve_data_dir(&app)
+        .map_err(|e| e.to_string())?;
+    let lib_dir = data_dir.join("library");
+    std::fs::create_dir_all(&lib_dir).map_err(|e| e.to_string())?;
+    
+    let safe_name = format!("{}_{}", id, file_name.replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], "_"));
+    let file_path = lib_dir.join(&safe_name);
+    std::fs::write(&file_path, &bytes).map_err(|e| e.to_string())?;
+    let file_path_str = file_path.to_string_lossy().to_string();
+    
+    // Extract text content for search/context
+    let content_text: Option<String> = if file_name.to_lowercase().ends_with(".txt") || file_name.to_lowercase().ends_with(".md") {
+        String::from_utf8(bytes.clone()).ok()
+    } else if file_name.to_lowercase().ends_with(".csv") {
+        String::from_utf8(bytes.clone()).ok()
+    } else {
+        // For PDFs, store a placeholder; future enhancement can extract text
+        None
+    };
+    
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
+    conn.execute(
+        "INSERT INTO asistan_library (id, name, file_path, file_type, content_text, size_bytes, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        rusqlite::params![id, file_name, file_path_str, file_type, content_text, size_bytes, now],
+    ).map_err(|e| e.to_string())?;
+    
+    Ok(LibraryDocument {
+        id,
+        name: file_name,
+        file_path: file_path_str,
+        file_type,
+        content_text,
+        size_bytes,
+        created_at: now,
+    })
+}
+
+#[tauri::command]
+pub fn library_list_documents(pool: State<DbPool>) -> Result<Vec<LibraryDocument>, String> {
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
+    let mut stmt = conn.prepare(
+        "SELECT id, name, file_path, file_type, content_text, size_bytes, created_at FROM asistan_library ORDER BY created_at DESC"
+    ).map_err(|e| e.to_string())?;
+    
+    let docs = stmt.query_map([], |row| {
+        Ok(LibraryDocument {
+            id: row.get(0)?,
+            name: row.get(1)?,
+            file_path: row.get(2)?,
+            file_type: row.get(3)?,
+            content_text: row.get(4)?,
+            size_bytes: row.get(5)?,
+            created_at: row.get(6)?,
+        })
+    })
+    .map_err(|e| e.to_string())?
+    .collect::<Result<Vec<_>, _>>()
+    .map_err(|e| e.to_string())?;
+    
+    Ok(docs)
+}
+
+#[tauri::command]
+pub fn library_delete_document(pool: State<DbPool>, id: String) -> Result<(), String> {
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
+    
+    // Get file path first to delete from disk
+    let file_path: Result<String, _> = conn.query_row(
+        "SELECT file_path FROM asistan_library WHERE id = ?1",
+        [&id],
+        |row| row.get(0),
+    );
+    
+    if let Ok(path) = file_path {
+        let _ = std::fs::remove_file(&path);
+    }
+    
+    conn.execute("DELETE FROM asistan_library WHERE id = ?1", [&id])
+        .map_err(|e| e.to_string())?;
+    
+    Ok(())
+}
+
+/// Returns concatenated text from all library documents with text content (for AI context)
+pub fn get_library_context(pool: &DbPool) -> String {
+    let conn = match pool.get_conn() {
+        Ok(c) => c,
+        Err(_) => return String::new(),
+    };
+    
+    let mut stmt = match conn.prepare(
+        "SELECT name, content_text FROM asistan_library WHERE content_text IS NOT NULL AND content_text != '' ORDER BY created_at DESC LIMIT 5"
+    ) {
+        Ok(s) => s,
+        Err(_) => return String::new(),
+    };
+    
+    let mut context = String::new();
+    let rows: Vec<(String, String)> = stmt.query_map([], |row| {
+        Ok((row.get(0)?, row.get(1)?))
+    })
+    .map(|iter| iter.filter_map(|r| r.ok()).collect())
+    .unwrap_or_default();
+    
+    if rows.is_empty() {
+        return context;
+    }
+    
+    context.push_str("--- KİTAPLIK BELGELERİ ---\n");
+    for (name, text) in rows {
+        // Limit per document to 2000 chars to avoid huge prompts
+        let truncated = if text.len() > 2000 { &text[..2000] } else { &text[..] };
+        context.push_str(&format!("Belge: {}\n{}\n\n", name, truncated));
     }
     
     context

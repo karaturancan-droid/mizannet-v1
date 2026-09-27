@@ -174,6 +174,7 @@ pub struct Worker {
     pub branch_id: Option<String>,
     pub phone: Option<String>,
     pub email: Option<String>,
+    pub severance_pay: Option<f64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

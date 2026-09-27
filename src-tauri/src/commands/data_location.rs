@@ -129,10 +129,10 @@ mod tests {
         let dst = temp.join("dst");
         std::fs::create_dir_all(&src).unwrap();
 
-        let pool = DbPool(db::create_pool(&src));
+        let pool = DbPool(db::create_pool(&src).into());
         {
             let conn = pool.get_conn().unwrap();
-            db::run_migrations(&conn).unwrap();
+            crate::db_migrations::run_migrations(&conn).unwrap();
             conn.execute(
                 "INSERT INTO companies (id, name, created_at) VALUES ('c1', 'Test AÅ', '2026-01-01T00:00:00Z')",
                 [],

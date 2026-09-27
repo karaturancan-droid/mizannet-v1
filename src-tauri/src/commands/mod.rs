@@ -20,3 +20,11 @@ pub mod whatsapp;
 pub mod workspaces;
 pub mod workflow;
 pub mod branches;
+pub mod agent_tools;
+pub mod auto_messenger;
+pub mod bank_reconciliation;
+pub mod gib_einvoice;
+#[cfg(test)]
+mod gib_einvoice_test;
+#[cfg(test)]
+mod gib_mock_test;

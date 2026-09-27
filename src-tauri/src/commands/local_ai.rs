@@ -214,7 +214,9 @@ pub async fn download_local_ai(app: AppHandle, model_url: Option<String>, skip_m
     let model_path = dir.join("model.gguf");
 
     // Official Llama.cpp Windows binary (Vulkan support with all required DLLs)
-    let server_zip_url = "https://github.com/ggerganov/llama.cpp/releases/download/b3744/llama-b3744-bin-win-vulkan-x64.zip";
+    // NOT: Yeni mimariler (Qwen3.8/`qwen35`, Llama 4, Gemma 3 vb.) için en az
+    // b6100+ gerekir. Eski b3744 build'i 'unknown model architecture' hatası verir.
+    let server_zip_url = "https://github.com/ggml-org/llama.cpp/releases/download/b11213/llama-b11213-bin-win-vulkan-x64.zip";
     let final_model_url = model_url.unwrap_or_else(|| "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF/resolve/main/qwen2.5-3b-instruct-q4_k_m.gguf".to_string());
 
     if !server_path.exists() {
@@ -321,6 +323,14 @@ pub fn start_local_ai(
             }
         }
     }
+    // Aynı klasörde vision projector varsa da model seçimini mmproj dosyasına
+    // YÖNLENDİRME — llama-server'a asıl modeli verirken mmproj dosyasını atla:
+    if let Some(parent) = model_path.parent() {
+        let name_lower = model_path.file_name().map(|n| n.to_string_lossy().to_lowercase()).unwrap_or_default();
+        if name_lower.starts_with("mmproj") {
+            return Err("Seçilen dosya bir vision projector (mmproj) dosyası. Lütfen asıl model .gguf dosyasını seçin.".to_string());
+        }
+    }
 
     // Log dosyası oluştur
     let log_path = dir.join("llama-server.log");
@@ -344,9 +354,10 @@ pub fn start_local_ai(
        .arg("-ngl")
        .arg("99"); // GPU layer offload
 
-    // if let Some(proj) = mmproj_arg {
-    //     cmd.arg("--mmproj").arg(proj);
-    // }
+    // Vision (görsel anlama) desteği: aynı klasörde mmproj varsa etkinleştir.
+    if let Some(proj) = mmproj_arg {
+        cmd.arg("--mmproj").arg(proj);
+    }
 
     cmd.current_dir(&dir)
        .stdout(Stdio::from(log_file))
@@ -387,6 +398,16 @@ pub fn reset_local_ai(app: AppHandle, state: State<LocalAiProcess>) -> Result<bo
     }
     if model_path.exists() {
         let _ = fs::remove_file(model_path);
+    }
+
+    // Yarım kalmış .tmp indirmelerini de temizle (örn. model.gguf.tmp)
+    if let Ok(entries) = fs::read_dir(&dir) {
+        for entry in entries.flatten() {
+            let name = entry.file_name().to_string_lossy().to_lowercase();
+            if name.ends_with(".tmp") {
+                let _ = fs::remove_file(entry.path());
+            }
+        }
     }
     
     // Custom model kullanılıyorsa onun yolunu da temizlemek isteyebiliriz ama
@@ -483,25 +504,29 @@ pub async fn detect_hardware() -> Result<HardwareInfo, String> {
         }
     }
 
-    // 3. Önerilen Modeller
+    // 3. Önerilen Modeller (güncel GGUF kataloğu — HuggingFace repo adlarıyla)
+    // Kullanıcı bu isimleri HuggingFace Model Tarayıcı'sında doğrudan aratabilir.
     let mut recommended_models = Vec::new();
     
-    if gpu_vram_gb >= 15.0 {
-        recommended_models.push("Llama-3 70B (Int4 / Çok Yüksek Hız)".to_string());
-        recommended_models.push("Mixtral 8x7B (Gelişmiş Analiz)".to_string());
-    } else if gpu_vram_gb >= 7.5 {
-        recommended_models.push("Llama-3.1 8B (Q8 - Kayıpsız Performans)".to_string());
-        recommended_models.push("Mistral Nemo 12B (İleri Seviye)".to_string());
+    if gpu_vram_gb >= 20.0 {
+        recommended_models.push("Qwen3.8-27B-GGUF (27B — Q6_K, üst düzey Türkçe)".to_string());
+        recommended_models.push("unsloth/Qwen3-VL-32B-GGUF (görsel + metin)".to_string());
+    } else if gpu_vram_gb >= 12.0 {
+        recommended_models.push("lmstudio-community/Qwen3.8-27B-GGUF (27B — Q4_K_M)".to_string());
+        recommended_models.push("unsloth/Qwen3-VL-8B-GGUF (8B görsel + metin)".to_string());
+    } else if gpu_vram_gb >= 6.0 {
+        recommended_models.push("unsloth/Qwen3-14B-GGUF (14B — Q4_K_M)".to_string());
+        recommended_models.push("bartowski/Meta-Llama-3.1-8B-Instruct-GGUF".to_string());
     } else if gpu_vram_gb >= 3.5 {
-        recommended_models.push("Llama-3.1 8B (Q4_K_M - Hızlı)".to_string());
-        recommended_models.push("Qwen-2.5 7B (Hızlı Kod/Matematik)".to_string());
+        recommended_models.push("Qwen/Qwen3-8B-GGUF (8B — Q4_K_M hızlı)".to_string());
+        recommended_models.push("google/gemma-3-4b-it-GGUF (4B hafif + görsel)".to_string());
     } else {
         if cpu_ram_gb >= 15.0 {
-            recommended_models.push("Phi-3 Mini (İşlemci ile Orta Hız)".to_string());
-            recommended_models.push("Qwen-2.5 7B (İşlemci ile Orta Hız)".to_string());
+            recommended_models.push("Qwen/Qwen3-8B-GGUF (CPU ile orta hız)".to_string());
+            recommended_models.push("bartowski/Phi-3.5-mini-instruct-GGUF (CPU hızlı)".to_string());
         } else {
-            recommended_models.push("Gemma-2 2B (Düşük Donanım Modu)".to_string());
-            recommended_models.push("Phi-3 Mini (Q4 - Düşük Donanım Modu)".to_string());
+            recommended_models.push("google/gemma-3-1b-it-GGUF (düşük donanım)".to_string());
+            recommended_models.push("Qwen/Qwen3-1.7B-GGUF (düşük donanım)".to_string());
         }
     }
 

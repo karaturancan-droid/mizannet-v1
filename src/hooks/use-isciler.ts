@@ -22,6 +22,7 @@ export interface Worker {
   branch_id?: string;
   phone?: string;
   email?: string;
+  severance_pay?: number;
 }
 
 export interface Leave {
