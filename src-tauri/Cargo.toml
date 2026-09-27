@@ -45,3 +45,7 @@ tauri-plugin-shell = "2.3.6"
 sha2 = "0.10.9"
 aes-gcm = "0.10.3"
 rust_xlsxwriter = "0.78"
+dirs = "7.0.0"
+
+[dev-dependencies]
+mockito = "1.7.2"
