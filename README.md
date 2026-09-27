@@ -5,7 +5,7 @@
 **Maden ve inşaat sektörü için masaüstü işletme yönetim uygulaması**
 
 [![Tauri](https://img.shields.io/badge/Tauri-2.x-24C8DB?style=for-the-badge&logo=tauri&logoColor=white)](https://tauri.app)
-[![Next.js](https://img.shields.io/badge/Next.js-15-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org)
+[![Next.js](https://img.shields.io/badge/Next.js-16-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://typescriptlang.org)
 [![Rust](https://img.shields.io/badge/Rust-Backend-DE4B23?style=for-the-badge&logo=rust&logoColor=white)](https://rustlang.org)
@@ -35,6 +35,7 @@
 |---|---|
 | 📊 **Yönetim Paneli** | Finansal genel bakış: bakiye, kâr, gelir/gider grafikleri ve son işlemler |
 | 💼 **Cari Hesaplar** | Müşteri/tedarikçi cari takibi, bakiye ve hareket geçmişi, Excel aktarımı |
+| 🧾 **e-Fatura (GİB)** | GİB e-Arşiv portalı entegrasyonu, kontör olmadan fatura kesme ve imzalama |
 | 📦 **Depo** | Stok ve malzeme takibi, stok hareketleri, kritik stok uyarıları |
 | 🚛 **Araçlar** | Araç filosu, bakım, lastik ve masraf takibi |
 | 🏛️ **Vergi Takibi** | Vergi/SGK ödemeleri ve son tarih takibi, KDV hesaplayıcı |
