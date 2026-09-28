@@ -472,7 +472,7 @@ fn search_knowledge_base(query: &str) -> String {
     let query_words: Vec<&str> = query_lower.split_whitespace().collect();
     
     // Ignore very short or generic queries
-    if query_words.len() < 1 || (query_words.len() == 1 && query_words[0].len() < 3) {
+    if query_words.is_empty() || (query_words.len() == 1 && query_words[0].len() < 3) {
         return context;
     }
 
@@ -664,4 +664,20 @@ pub fn get_library_context(pool: &DbPool) -> String {
     }
     
     context
+}
+
+#[tauri::command]
+pub fn start_voice_recording() -> Result<(), String> {
+    // TODO: Gerçek mikrofon cpal / whisper entegrasyonu
+    println!("Native ses kaydı başlatıldı (Simülasyon)...");
+    Ok(())
+}
+
+#[tauri::command]
+pub fn stop_voice_recording() -> Result<String, String> {
+    // TODO: Gerçek mikrofon cpal / whisper entegrasyonu
+    println!("Native ses kaydı durduruldu, metne çevriliyor (Simülasyon)...");
+    
+    // Rastgele bir örnek cümle döndürelim (sanki dinlenmiş gibi)
+    Ok("Lütfen bana en çok kâr getiren 3 ürünü listeler misin?".to_string())
 }

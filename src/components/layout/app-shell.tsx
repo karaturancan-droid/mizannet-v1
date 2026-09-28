@@ -14,6 +14,7 @@ import { WeatherWidget } from "./weather-widget";
 import { useBildirimler } from "@/hooks/use-bildirimler";
 import { useAyarlar } from "@/hooks/use-ayarlar";
 import { useBranch } from "@/contexts/BranchContext";
+import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -28,10 +29,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [licenseType] = useState("Sınırsız Kart (All-Access Pass)");
 
   const { notifications } = useBildirimler();
-  const { settings } = useAyarlar();
+  const { settings, loadAllSettings } = useAyarlar();
   const { branches, activeBranchId, setActiveBranchId } = useBranch();
   const unreadCount = notifications.filter(n => n.status === 'aktif').length;
   const userName = settings?.contact_person?.split(' ')[0] || settings?.company_name || "";
+  
+  const [isSetupComplete, setIsSetupComplete] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    loadAllSettings().then(s => {
+      setIsSetupComplete(s.setup_complete === "true");
+    });
+  }, [loadAllSettings]);
 
   const searchItems = [
     { name: "Yeni Fatura Ekle (Asistan)", icon: <FileText className="h-4 w-4" />, action: () => router.push("/asistan") },
@@ -102,6 +111,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <ToastProvider>
+      {isSetupComplete === false && (
+        <OnboardingWizard onComplete={() => window.location.reload()} />
+      )}
       <div className="flex h-screen w-screen overflow-hidden bg-[#f3f4f6] p-2 md:p-3 gap-3">
         {/* Geniş ekranlarda sabit kenar çubuğu */}
         <div 

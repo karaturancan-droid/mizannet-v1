@@ -31,8 +31,15 @@ export function useFaturaAktarim() {
       setLoading(true);
       setError(null);
       try {
-        const arrayBuffer = await file.arrayBuffer();
-        const base64 = Buffer.from(arrayBuffer).toString('base64');
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result as string;
+            resolve(result.split(',')[1]);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
         const result = await callBackend<Invoice>('upload_and_extract_invoice', {
           file_data: base64,
           file_name: file.name,

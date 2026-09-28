@@ -8,6 +8,8 @@ import { DataLocationSection } from '@/components/ayarlar/data-location-section'
 import { WhatsAppSection } from '@/components/ayarlar/whatsapp-section';
 import { LicenseSection } from '@/components/ayarlar/license-section';
 import { WebAccountSection } from '@/components/ayarlar/web-account-section';
+import { InvoiceBrandingSection } from '@/components/ayarlar/invoice-branding-section';
+import { NetworkSection } from '@/components/ayarlar/network-section';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function AyarlarPage() {
@@ -19,13 +21,15 @@ export default function AyarlarPage() {
       </div>
 
       <Tabs defaultValue="profil" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="profil">Profil</TabsTrigger>
-          <TabsTrigger value="lisans">Lisans</TabsTrigger>
-          <TabsTrigger value="web">Web Hesabı</TabsTrigger>
-          <TabsTrigger value="yedekleme">Yedekleme</TabsTrigger>
-          <TabsTrigger value="veri">Veri Konumu</TabsTrigger>
-          <TabsTrigger value="api">Yapay Zeka</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-2 h-auto p-1 mb-8">
+          <TabsTrigger value="profil" className="py-2">Profil</TabsTrigger>
+          <TabsTrigger value="lisans" className="py-2">Lisans</TabsTrigger>
+          <TabsTrigger value="web" className="py-2">Web Hesabı</TabsTrigger>
+          <TabsTrigger value="marka" className="py-2">Fatura Markası</TabsTrigger>
+          <TabsTrigger value="yedekleme" className="py-2">Yedekleme</TabsTrigger>
+          <TabsTrigger value="veri" className="py-2">Veri Konumu</TabsTrigger>
+          <TabsTrigger value="ag" className="py-2">Ağ (LAN)</TabsTrigger>
+          <TabsTrigger value="api" className="py-2">Yapay Zeka</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profil" className="space-y-4">
@@ -40,12 +44,20 @@ export default function AyarlarPage() {
           <WebAccountSection />
         </TabsContent>
 
+        <TabsContent value="marka" className="space-y-4">
+          <InvoiceBrandingSection />
+        </TabsContent>
+
         <TabsContent value="yedekleme" className="space-y-4">
           <BackupSection />
         </TabsContent>
 
         <TabsContent value="veri" className="space-y-4">
           <DataLocationSection />
+        </TabsContent>
+
+        <TabsContent value="ag" className="space-y-4">
+          <NetworkSection />
         </TabsContent>
 
         <TabsContent value="api" className="space-y-4">

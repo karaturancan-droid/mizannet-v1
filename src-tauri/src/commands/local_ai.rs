@@ -89,7 +89,7 @@ pub async fn check_local_ai_installed(app: AppHandle, custom_model_path: Option<
 
     if let Some(p) = custom_model_path.filter(|p| !p.trim().is_empty()) {
         let path = PathBuf::from(p);
-        if path.is_file() && path.extension().map_or(false, |e| e.to_string_lossy().to_lowercase() == "gguf") {
+        if path.is_file() && path.extension().is_some_and(|e| e.to_string_lossy().to_lowercase() == "gguf") {
             return Ok(true);
         }
         if path.is_dir() {
@@ -264,7 +264,7 @@ pub fn start_local_ai(
 
     if let Some(p) = custom_model_path.filter(|s| !s.trim().is_empty()) {
         let path = PathBuf::from(&p);
-        if path.is_file() && path.extension().map_or(false, |e| e.to_string_lossy().to_lowercase() == "gguf") {
+        if path.is_file() && path.extension().is_some_and(|e| e.to_string_lossy().to_lowercase() == "gguf") {
             resolved_model = Some(path);
         } else if path.is_dir() {
             if let Some(fname) = model_filename.filter(|s| !s.trim().is_empty()) {
@@ -456,7 +456,7 @@ pub async fn detect_hardware() -> Result<HardwareInfo, String> {
     // 1. RAM Miktarı
     let mut cpu_ram_gb = 0.0;
     if let Ok(out) = Command::new("powershell")
-        .args(&["-NoProfile", "-Command", "(Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory"])
+        .args(["-NoProfile", "-Command", "(Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory"])
         .output()
     {
         let stdout = String::from_utf8_lossy(&out.stdout).trim().to_string();
@@ -470,7 +470,7 @@ pub async fn detect_hardware() -> Result<HardwareInfo, String> {
     let mut gpu_vram_gb = 0.0;
     
     if let Ok(out) = Command::new("powershell")
-        .args(&["-NoProfile", "-Command", "Get-CimInstance Win32_VideoController | Select-Object Name, AdapterRAM | ConvertTo-Json"])
+        .args(["-NoProfile", "-Command", "Get-CimInstance Win32_VideoController | Select-Object Name, AdapterRAM | ConvertTo-Json"])
         .output()
     {
         let stdout = String::from_utf8_lossy(&out.stdout).to_string();
@@ -555,7 +555,7 @@ pub fn list_local_models(app: AppHandle, custom_dir: Option<String>) -> Result<V
         if custom_path.exists() {
             if custom_path.is_dir() {
                 scan_gguf_files(&custom_path, 2, 0, &mut models);
-            } else if custom_path.is_file() && custom_path.extension().map_or(false, |e| e.to_string_lossy().to_lowercase() == "gguf") {
+            } else if custom_path.is_file() && custom_path.extension().is_some_and(|e| e.to_string_lossy().to_lowercase() == "gguf") {
                 if let Ok(meta) = custom_path.metadata() {
                     let name = custom_path.file_name().unwrap_or_default().to_string_lossy().to_string();
                     let is_vision = name.to_lowercase().contains("mmproj");

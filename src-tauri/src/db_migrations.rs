@@ -29,6 +29,8 @@ pub fn run_migrations(conn: &Connection) -> rusqlite::Result<()> {
         (14, "branches"),
         (15, "asistan_library"),
         (16, "accounts_and_bank_statements"),
+        (17, "expenses_and_cash_agenda"),
+        (18, "whatsapp_allowlist"),
     ];
 
     for (version, _name) in migrations {
@@ -59,6 +61,8 @@ pub fn run_migrations(conn: &Connection) -> rusqlite::Result<()> {
                 14 => migration_14_branches(conn)?,
                 15 => migration_15_asistan_library(conn)?,
                 16 => migration_16_accounts_bank_statements(conn)?,
+                17 => migration_17_expenses(conn)?,
+                18 => migration_18_whatsapp_allowlist(conn)?,
                 _ => {}
             }
             conn.execute(
@@ -803,6 +807,44 @@ fn migration_16_accounts_bank_statements(conn: &Connection) -> rusqlite::Result<
 
         CREATE INDEX IF NOT EXISTS idx_bank_statements_status ON bank_statements(status);
         "#,
+    )?;
+    Ok(())
+}
+
+fn migration_17_expenses(conn: &Connection) -> rusqlite::Result<()> {
+    conn.execute_batch(
+        r#"
+        CREATE TABLE IF NOT EXISTS expenses (
+            id TEXT PRIMARY KEY,
+            date TEXT NOT NULL,
+            vendor TEXT,
+            category TEXT,
+            amount REAL NOT NULL DEFAULT 0,
+            vat_amount REAL,
+            payment_method TEXT,
+            description TEXT,
+            file_path TEXT,
+            source TEXT NOT NULL DEFAULT 'manuel',
+            created_at TEXT NOT NULL,
+            branch_id TEXT DEFAULT 'default_branch'
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(date);
+        "#,
+    )?;
+    Ok(())
+}
+
+fn migration_18_whatsapp_allowlist(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS whatsapp_allowlist (
+            id TEXT PRIMARY KEY,
+            phone_number TEXT NOT NULL UNIQUE,
+            status TEXT NOT NULL DEFAULT 'approved',
+            name TEXT,
+            created_at TEXT NOT NULL
+        )",
+        [],
     )?;
     Ok(())
 }

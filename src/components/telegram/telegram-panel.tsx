@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { Bot, Inbox, CheckCircle2, ShieldCheck, Power, RefreshCw, Trash2, FileCheck2, MessageSquare, ArrowLeft, Image as ImageIcon } from "lucide-react";
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { useToast } from "@/components/ui/toast";
@@ -37,13 +38,14 @@ export default function TelegramPanel() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(() => {
+    let unlisten: any;
+    listen("telegram_update", () => {
       loadData();
       if (selectedUser) {
         loadMessages(selectedUser.telegram_user_id);
       }
-    }, 5000); // Polling for updates
-    return () => clearInterval(interval);
+    }).then(u => { unlisten = u; });
+    return () => { if (unlisten) unlisten(); };
   }, [selectedUser]);
 
   const loadMessages = async (userId: string) => {

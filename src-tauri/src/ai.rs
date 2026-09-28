@@ -945,7 +945,7 @@ fn chat_agentic(
                         let parsed: serde_json::Value = serde_json::from_str(args_str).unwrap_or_default();
                         if let Some(path) = parsed["path"].as_str() {
                             emit_tool("read_file", path, "running");
-                            let r = match tools::read_file(app_opt.as_ref().unwrap_or(&app_handle_placeholder()), &session_id, path) {
+                            let r = match tools::read_file(app_opt.as_ref().unwrap_or(app_handle_placeholder()), &session_id, path) {
                                 Ok(content) => {
                                     emit_tool("read_file", path, "done");
                                     content
@@ -964,7 +964,7 @@ fn chat_agentic(
                         let parsed: serde_json::Value = serde_json::from_str(args_str).unwrap_or_default();
                         if let Some(path) = parsed["path"].as_str() {
                             emit_tool("list_dir", path, "running");
-                            let r = match tools::list_dir(app_opt.as_ref().unwrap_or(&app_handle_placeholder()), &session_id, path) {
+                            let r = match tools::list_dir(app_opt.as_ref().unwrap_or(app_handle_placeholder()), &session_id, path) {
                                 Ok(entries) => {
                                     emit_tool("list_dir", &format!("{} ({} öğe)", path, entries.len()), "done");
                                     serde_json::to_string(&entries).unwrap_or_else(|e| format!("Liste oluşturma hatası: {}", e))
@@ -983,7 +983,7 @@ fn chat_agentic(
                         let parsed: serde_json::Value = serde_json::from_str(args_str).unwrap_or_default();
                         if let Some(command) = parsed["command"].as_str() {
                             let wd = parsed["working_dir"].as_str();
-                            match tools::run_terminal(app_opt.as_ref().unwrap_or(&app_handle_placeholder()), &session_id, command, wd) {
+                            match tools::run_terminal(app_opt.as_ref().unwrap_or(app_handle_placeholder()), &session_id, command, wd) {
                                 Ok(res) => serde_json::to_string(&res).unwrap_or_default(),
                                 Err(e) => format!("Komut hatası: {}", e),
                             }
@@ -995,7 +995,7 @@ fn chat_agentic(
                         let parsed: serde_json::Value = serde_json::from_str(args_str).unwrap_or_default();
                         match (parsed["source"].as_str(), parsed["destination"].as_str()) {
                             (Some(source), Some(destination)) => {
-                                match tools::move_path(app_opt.as_ref().unwrap_or(&app_handle_placeholder()), &session_id, source, destination) {
+                                match tools::move_path(app_opt.as_ref().unwrap_or(app_handle_placeholder()), &session_id, source, destination) {
                                     Ok(msg) => msg,
                                     Err(e) => format!("Taşıma hatası: {}", e),
                                 }
@@ -1007,7 +1007,7 @@ fn chat_agentic(
                         let parsed: serde_json::Value = serde_json::from_str(args_str).unwrap_or_default();
                         match (parsed["source"].as_str(), parsed["destination"].as_str()) {
                             (Some(source), Some(destination)) => {
-                                match tools::copy_path(app_opt.as_ref().unwrap_or(&app_handle_placeholder()), &session_id, source, destination) {
+                                match tools::copy_path(app_opt.as_ref().unwrap_or(app_handle_placeholder()), &session_id, source, destination) {
                                     Ok(msg) => msg,
                                     Err(e) => format!("Kopyalama hatası: {}", e),
                                 }
@@ -1018,7 +1018,7 @@ fn chat_agentic(
                     "delete_path" => {
                         let parsed: serde_json::Value = serde_json::from_str(args_str).unwrap_or_default();
                         if let Some(path) = parsed["path"].as_str() {
-                            match tools::delete_path(app_opt.as_ref().unwrap_or(&app_handle_placeholder()), &session_id, path) {
+                            match tools::delete_path(app_opt.as_ref().unwrap_or(app_handle_placeholder()), &session_id, path) {
                                 Ok(msg) => msg,
                                 Err(e) => format!("Silme hatası: {}", e),
                             }
@@ -1030,7 +1030,7 @@ fn chat_agentic(
                         let parsed: serde_json::Value = serde_json::from_str(args_str).unwrap_or_default();
                         match (parsed["root"].as_str(), parsed["pattern"].as_str()) {
                             (Some(root), Some(pattern)) => {
-                                match tools::search_files(app_opt.as_ref().unwrap_or(&app_handle_placeholder()), &session_id, root, pattern) {
+                                match tools::search_files(app_opt.as_ref().unwrap_or(app_handle_placeholder()), &session_id, root, pattern) {
                                     Ok(results) => serde_json::to_string(&results).unwrap_or_default(),
                                     Err(e) => format!("Arama hatası: {}", e),
                                 }
@@ -1042,7 +1042,7 @@ fn chat_agentic(
                         let parsed: serde_json::Value = serde_json::from_str(args_str).unwrap_or_default();
                         if let (Some(file_name), Some(rows)) = (parsed["file_name"].as_str(), parsed["rows"].as_array()) {
                             let row_vec: Vec<Vec<serde_json::Value>> = rows.iter().map(|r| r.as_array().cloned().unwrap_or_default()).collect();
-                            match tools::generate_excel(app_opt.as_ref().unwrap_or(&app_handle_placeholder()), &session_id, file_name, row_vec, parsed["sheet_name"].as_str().map(|s| s.to_string())) {
+                            match tools::generate_excel(app_opt.as_ref().unwrap_or(app_handle_placeholder()), &session_id, file_name, row_vec, parsed["sheet_name"].as_str().map(|s| s.to_string())) {
                                 Ok(msg) => msg,
                                 Err(e) => format!("Excel üretim hatası: {}", e),
                             }
@@ -1053,7 +1053,7 @@ fn chat_agentic(
                     "generate_word_file" => {
                         let parsed: serde_json::Value = serde_json::from_str(args_str).unwrap_or_default();
                         if let (Some(file_name), Some(content)) = (parsed["file_name"].as_str(), parsed["content"].as_str()) {
-                            match tools::generate_word(app_opt.as_ref().unwrap_or(&app_handle_placeholder()), &session_id, file_name, content) {
+                            match tools::generate_word(app_opt.as_ref().unwrap_or(app_handle_placeholder()), &session_id, file_name, content) {
                                 Ok(msg) => msg,
                                 Err(e) => format!("Word üretim hatası: {}", e),
                             }
@@ -1065,7 +1065,7 @@ fn chat_agentic(
                         let parsed: serde_json::Value = serde_json::from_str(args_str).unwrap_or_default();
                         if let (Some(path), Some(content)) = (parsed["path"].as_str(), parsed["content"].as_str()) {
                             emit_tool("write_file", path, "running");
-                            match tools::write_file_tool(app_opt.as_ref().unwrap_or(&app_handle_placeholder()), &session_id, path, content) {
+                            match tools::write_file_tool(app_opt.as_ref().unwrap_or(app_handle_placeholder()), &session_id, path, content) {
                                 Ok(msg) => {
                                     emit_tool("write_file", path, "done");
                                     msg
@@ -1083,7 +1083,7 @@ fn chat_agentic(
                         let parsed: serde_json::Value = serde_json::from_str(args_str).unwrap_or_default();
                         if let (Some(prompt), Some(filename)) = (parsed["prompt"].as_str(), parsed["filename"].as_str()) {
                             emit_tool("gorsel", prompt, "running");
-                            match tools::generate_image_tool(app_opt.as_ref().unwrap_or(&app_handle_placeholder()), &session_id, prompt, filename) {
+                            match tools::generate_image_tool(app_opt.as_ref().unwrap_or(app_handle_placeholder()), &session_id, prompt, filename) {
                                 Ok(msg) => {
                                     emit_tool("gorsel", &msg, "done");
                                     msg
@@ -1103,7 +1103,7 @@ fn chat_agentic(
                             // Gerçek .docx üret (yeni yol); eski .doc/HTML fallback'i korunur
                             if filename.to_lowercase().ends_with(".docx") {
                                 emit_tool("word", filename, "running");
-                                match tools::generate_word(app_opt.as_ref().unwrap_or(&app_handle_placeholder()), &session_id, filename, content) {
+                                match tools::generate_word(app_opt.as_ref().unwrap_or(app_handle_placeholder()), &session_id, filename, content) {
                                     Ok(msg) => {
                                         emit_tool("word", filename, "done");
                                         msg

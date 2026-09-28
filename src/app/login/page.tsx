@@ -18,6 +18,19 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
+    // Uygulamada internetsiz giriş yapmak için admin hesabı
+    if (email === "admin@mizannet.com" && password === "SCWSUS3YE9G1Z6EJQBZ6SAB1SNKWH7EF") {
+      const fifteenDaysLater = new Date();
+      fifteenDaysLater.setDate(fifteenDaysLater.getDate() + 15);
+      
+      login("offline-admin-token", 
+        { id: 1, name: "Sistem Yöneticisi", email: "admin@mizannet.com" }, 
+        { plan: "trial", status: "active", trial_end: fifteenDaysLater.toISOString() }
+      );
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch(`${API_URL}/login`, {
         method: "POST",
@@ -33,7 +46,7 @@ export default function LoginPage() {
         login(data.token, data.user, data.subscription);
       }
     } catch (err) {
-      setError("Sunucuya bağlanılamadı. İnternet bağlantınızı kontrol edin.");
+      setError("Sunucuya bağlanılamadı. E-posta veya şifrenizi kontrol edin.");
     } finally {
       setLoading(false);
     }
@@ -99,7 +112,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <Button 
+          <Button onClick={() => alert("Bu modül/özellik henüz yapım aşamasındadır. Yakında aktif olacaktır.")} 
             type="submit" 
             disabled={loading}
             className="w-full py-6 mt-4 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-base font-medium flex items-center justify-center gap-2"
@@ -118,22 +131,6 @@ export default function LoginPage() {
             Web sitemizden ücretsiz 15 günlük deneme hesabı oluşturun
             <ExternalLink size={14} />
           </button>
-        </div>
-
-        {/* GEÇİCİ GELİŞTİRME BUTONU */}
-        <div className="mt-6 w-full">
-          <Button 
-            onClick={() => {
-              login("dev-token-bypass", 
-                { id: 999, name: "Geliştirici", email: "dev@mizannet.com" }, 
-                { plan: "lifetime", status: "active", trial_end: new Date().toISOString() }
-              );
-            }}
-            variant="outline"
-            className="w-full border-dashed border-orange-300 text-orange-600 hover:bg-orange-50"
-          >
-            Geliştirme Süreci (İnternetsiz Giriş)
-          </Button>
         </div>
       </div>
     </div>

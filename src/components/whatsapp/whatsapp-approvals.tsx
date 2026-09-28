@@ -42,10 +42,7 @@ export function WhatsAppApprovals() {
     fetchApprovals();
     
     // Fallback polling for status
-    const interval = setInterval(() => {
-      fetchApprovals();
-    }, 30000); // 30 saniyeye çıkardık çünkü event bazlı güncellenecek
-    
+        
     // AI analizi bittiğinde gerçek zamanlı tetikleme
     let unlistenFn: (() => void) | undefined;
     listen("whatsapp_approval_ready", () => {
@@ -55,7 +52,7 @@ export function WhatsAppApprovals() {
     });
 
     return () => {
-      clearInterval(interval);
+      
       if (unlistenFn) unlistenFn();
     };
   }, []);

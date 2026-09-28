@@ -24,7 +24,11 @@ pub mod agent_tools;
 pub mod auto_messenger;
 pub mod bank_reconciliation;
 pub mod gib_einvoice;
+pub mod fis_ocr;
+pub mod invoice_branding;
+pub mod cash_agenda;
 #[cfg(test)]
 mod gib_einvoice_test;
 #[cfg(test)]
 mod gib_mock_test;
+pub mod ai_cfo;

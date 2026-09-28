@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, Plus, Mic } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { invoke } from '@tauri-apps/api/core';
 
 interface InputAreaProps {
   onSendMessage: (message: string, imageBase64?: string) => void;
@@ -52,47 +53,27 @@ export function InputArea({ onSendMessage, isLoading, onFileSelect, isAnalyzing 
     }
   };
 
-  const toggleRecording = () => {
+  const toggleRecording = async () => {
     if (isRecording) {
       setIsRecording(false);
+      // Kaydı durdur ve metne çevir (Masaüstü Yerel)
+      try {
+        const transcript = await invoke<string>('stop_voice_recording');
+        if (transcript) {
+           setMessage((prev) => (prev ? prev + ' ' + transcript : transcript));
+        }
+      } catch (error) {
+        console.error("Ses tanıma hatası:", error);
+      }
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Tarayıcınız sesli yazmayı desteklemiyor (Chrome veya Edge kullanın).");
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'tr-TR';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-
-    recognition.onstart = () => {
-      setIsRecording(true);
-    };
-
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setMessage((prev) => (prev ? prev + ' ' + transcript : transcript));
-    };
-
-    recognition.onerror = (event: any) => {
-      console.error("Ses tanıma hatası:", event.error);
-      setIsRecording(false);
-    };
-
-    recognition.onend = () => {
-      setIsRecording(false);
-    };
-
+    // Masaüstü uygulamasından mikrofonu başlat (Offline/Native)
     try {
-      recognition.start();
-    } catch (e) {
-      console.error(e);
-      setIsRecording(false);
+      await invoke('start_voice_recording');
+      setIsRecording(true);
+    } catch (error) {
+      alert("Masaüstü mikrofon erişimi sağlanamadı. Lütfen mikrofon ayarlarınızı kontrol edin.");
     }
   };
 

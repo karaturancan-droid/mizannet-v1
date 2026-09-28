@@ -12,10 +12,11 @@ pub mod crypto;
 
 use commands::asistan::{
     asistan_clear_history, asistan_get_history, asistan_mesaj_gonder,
-    create_chat_session, delete_chat_session, get_chat_sessions, update_chat_session_title,
+    create_chat_session, delete_chat_session, start_voice_recording, stop_voice_recording, get_chat_sessions, update_chat_session_title,
     library_upload_document, library_list_documents, library_delete_document,
 };
 use commands::backup::{export_backup, import_backup};
+use commands::ai_cfo::get_ceo_dashboard_metrics;
 use commands::companies::{create_company, delete_company, get_company, list_companies, update_company};
 use commands::data_location::{get_data_location, reset_data_location, set_data_location};
 use commands::file_analysis::{
@@ -83,6 +84,7 @@ use commands::gib_einvoice::{
     gib_login, gib_check_session, gib_logout, gib_query_recipient,
     gib_create_invoice, gib_start_sms_sign, gib_complete_sms_sign,
     gib_list_documents, gib_download_invoice, gib_delete_draft,
+    gib_create_smm, gib_list_smm, gib_download_smm,
 };
 
 use db::DbPool;
@@ -250,7 +252,7 @@ pub fn run() {
             get_chat_sessions,
             create_chat_session,
             update_chat_session_title,
-            delete_chat_session,
+            delete_chat_session, start_voice_recording, stop_voice_recording,
             // kitaplık
             library_upload_document,
             library_list_documents,
@@ -346,18 +348,31 @@ pub fn run() {
             gib_complete_sms_sign,
             gib_list_documents,
             gib_download_invoice,
-            gib_delete_draft
+            gib_delete_draft,
+            // AI fiş/gider OCR
+            commands::fis_ocr::analyze_receipt,
+            commands::fis_ocr::save_expense,
+            commands::fis_ocr::list_expenses,
+            commands::fis_ocr::delete_expense,
+            commands::fis_ocr::get_expense_summary,
+            // Fatura şablonu markalaşma
+            commands::invoice_branding::get_invoice_branding,
+            commands::invoice_branding::set_invoice_branding,
+            commands::invoice_branding::render_branded_invoice_html,
+            // e-SMM makbuzu
+            gib_create_smm,
+            gib_list_smm,
+            gib_download_smm,
+            // Nakit akış ajandası
+            commands::cash_agenda::get_cash_agenda,
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application")
-        .run(|app_handle, event| match event {
-            tauri::RunEvent::Exit => {
-                let state = app_handle.state::<commands::local_ai::LocalAiProcess>();
-                let mut guard = state.0.lock().unwrap();
-                if let Some(mut child) = guard.take() {
-                    let _ = child.kill();
-                }
+        .run(|app_handle, event| if let tauri::RunEvent::Exit = event {
+            let state = app_handle.state::<commands::local_ai::LocalAiProcess>();
+            let mut guard = state.0.lock().unwrap();
+            if let Some(mut child) = guard.take() {
+                let _ = child.kill();
             }
-            _ => {}
         });
 }

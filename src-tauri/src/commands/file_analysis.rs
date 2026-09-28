@@ -304,7 +304,7 @@ pub fn import_analyzed_data(
     })
 }
 
-fn get_str<'a>(item: &'a serde_json::Value, key: &str) -> Option<String> {
+fn get_str(item: &serde_json::Value, key: &str) -> Option<String> {
     item.get(key)
         .and_then(|v| v.as_str())
         .map(|s| s.to_string())
@@ -406,15 +406,14 @@ fn insert_invoice(
     
     // Eğer description/aciklama'da "TECHTO" gibi bir şey geçiyorsa ve hala company_id yoksa, description'dan firma oluşturmayı da deneyebiliriz.
     let desc = get_str(item, "description").unwrap_or_default();
-    if company_id.is_none() {
-        if !desc.is_empty() {
+    if company_id.is_none()
+        && !desc.is_empty() {
              let first_word = desc.split_whitespace().next().unwrap_or("");
              if first_word.len() > 3 {
                  let id: Result<String, _> = conn.query_row("SELECT id FROM companies WHERE name LIKE ?1 LIMIT 1", rusqlite::params![format!("%{}%", first_word)], |r| r.get(0));
                  if let Ok(i) = id { company_id = Some(i); }
              }
         }
-    }
     
     let final_company_id = company_id.unwrap_or_else(|| {
         let new_id = uuid::Uuid::new_v4().to_string();

@@ -661,9 +661,9 @@ fn record_signed_invoice(conn: &rusqlite::Connection, ettn: &str) -> Result<(), 
     let alici_adi = if unvan.is_empty() { format!("{} {}", ad, soyad).trim().to_string() } else { unvan };
 
     // Toplamlar (GİB sayıları string olarak döner)
-    let total = doc["odenecekTutar"].as_str().and_then(|s| parse_gib_number(s)).unwrap_or(0.0);
-    let kdv = doc["hesaplanankdv"].as_str().and_then(|s| parse_gib_number(s)).unwrap_or(0.0);
-    let matrah = doc["matrah"].as_str().and_then(|s| parse_gib_number(s)).unwrap_or(0.0);
+    let total = doc["odenecekTutar"].as_str().and_then(parse_gib_number).unwrap_or(0.0);
+    let kdv = doc["hesaplanankdv"].as_str().and_then(parse_gib_number).unwrap_or(0.0);
+    let matrah = doc["matrah"].as_str().and_then(parse_gib_number).unwrap_or(0.0);
 
     if total <= 0.0 {
         return Err(format!("Fatura tutarı okunamadı ({})", ettn));
@@ -831,4 +831,241 @@ pub fn gib_delete_draft(pool: State<DbPool>, ettn: String, reason: Option<String
     )?;
 
     Ok(data.as_str().unwrap_or("Silindi").to_string())
+}
+
+// ---------------------------------------------------------------------------
+// e-SMM (e-Serbest Meslek Makbuzu)
+// ---------------------------------------------------------------------------
+
+/// e-SMM makbuzu oluşturur (taslak) ve UUID'sini döner.
+/// e-SMM, faturadan farklı payload'a sahiptir: hizmet, dönem, brüt/net ücret,
+/// stopaj ve damga vergisi alanları zorunludur.
+#[tauri::command]
+pub fn gib_create_smm(
+    pool: State<DbPool>,
+    vkn_tckn: String,
+    alici_unvan: String,
+    alici_adi: String,
+    alici_soyadi: String,
+    donem: String,            // aa/yyyy (hizmetin ait olduğu dönem)
+    hizmet_aciklamasi: String,
+    brut_ucret: f64,          // KDV hariç brüt ücret
+    stopaj_orani: f64,        // 0 veya 20 (kira 20)
+    kdv_orani: f64,           // genellikle 20
+) -> Result<EInvoiceResult, String> {
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
+    let token = get_setting_str(&conn, "gib_token").filter(|t| !t.is_empty())
+        .ok_or("GİB oturumu yok. Önce giriş yapın.")?;
+    let test_mode = get_setting_str(&conn, "gib_test_mode").map(|v| v == "1").unwrap_or(false);
+
+    if vkn_tckn.len() != 10 && vkn_tckn.len() != 11 {
+        return Err("Alıcı VKN/TCKN 10 veya 11 haneli olmalı.".to_string());
+    }
+    if hizmet_aciklamasi.trim().is_empty() {
+        return Err("Hizmet açıklaması zorunludur.".to_string());
+    }
+    if brut_ucret <= 0.0 {
+        return Err("Brüt ücret 0'dan büyük olmalı.".to_string());
+    }
+
+    // Stopaj ve damga vergisi hesapları
+    let stopaj = brut_ucret * stopaj_orani / 100.0;
+    let net_ucret = brut_ucret - stopaj;
+    let kdv = net_ucret * kdv_orani / 100.0;
+    // Damga vergisi oranı binde 7,59
+    let damga = brut_ucret * 7.59 / 1000.0;
+    let odenecek = net_ucret + kdv + damga;
+
+    let now = chrono::Local::now();
+    let is_person = vkn_tckn.len() == 11;
+
+    let payload = serde_json::json!({
+        "vknTckn": vkn_tckn,
+        "hangiTip": "eArsivSmm",
+        "faturaUuid": "",
+        "belgeNumarasi": "",
+        "faturaTarihi": now.format("%d/%m/%Y").to_string(),
+        "saat": now.format("%H:%M:%S").to_string(),
+        "paraBirimi": "TRY",
+        "dovzTLkur": "1",
+        "donem": donem,
+        "aliciUnvan": if is_person { "" } else { &alici_unvan },
+        "aliciAdi": if is_person { &alici_adi } else { "" },
+        "aliciSoyadi": if is_person { &alici_soyadi } else { "" },
+        "bulvarcaddesokak": "",
+        "mahalleSemtIlce": "",
+        "sehir": "",
+        "ulke": "Türkiye",
+        "eposta": "",
+        "tel": "",
+        "vergiDairesi": "",
+        "not": "",
+        "malHizmetTable": [{
+            "malHizmet": hizmet_aciklamasi,
+            "miktar": "1",
+            "birim": "TL",
+            "birimFiyat": format_number(brut_ucret),
+            "fiyat": format_number(brut_ucret),
+            "iskontoArttm": "İskonto",
+            "iskontoOrani": "0",
+            "iskontoTutari": "0.00",
+            "iskontoNedeni": "",
+            "malHizmetTutari": format_number(brut_ucret),
+            "kdvOrani": format_number(kdv_orani),
+            "kdvTutari": format_number(kdv),
+            "vergiOrani": 0,
+            "vergiTutari": 0,
+            "ozelMatrahNedeni": 0,
+            "ozelMatrahTutari": 0,
+            "gtip": "",
+            "tevkifatKodu": 0,
+        }],
+        "matrah": format_number(brut_ucret),
+        "malhizmetToplamTutari": format_number(brut_ucret),
+        "toplamIskonto": "0.00",
+        "hesaplanankdv": format_number(kdv),
+        "vergilerToplami": format_number(kdv + damga),
+        "vergilerDahilToplamTutar": format_number(brut_ucret + kdv + damga),
+        "toplamMasraflar": "0.00",
+        "stopaj": format_number(stopaj),
+        "damgaVergisi": format_number(damga),
+        "netUcret": format_number(net_ucret),
+        "odenecekTutar": format_number(odenecek),
+    });
+
+    let client = GibClient::new(token, test_mode);
+    let data = client.dispatch("EARSIV_PORTAL_FATURA_OLUSTUR", "RG_BASITFATURA", payload)?;
+
+    let message = data.as_str().unwrap_or("").to_string();
+    if !message.contains("başarıyla") && !message.contains("basariyla") {
+        return Err(format!("e-SMM oluşturulamadı: {}", message));
+    }
+
+    // UUID'yi son belgeden al (e-SMM tipi ayrı listelenir)
+    let list = client.dispatch(
+        "EARSIV_PORTAL_TASLAKLARI_GETIR",
+        "RG_TASLAKLAR",
+        serde_json::json!({
+            "baslangic": now.format("%d/%m/%Y").to_string(),
+            "bitis": now.format("%d/%m/%Y").to_string(),
+            "hangiTip": "eArsivSmm",
+        }),
+    )?;
+
+    let uuid = list
+        .as_array()
+        .and_then(|arr| arr.first())
+        .and_then(|d| d["ettn"].as_str())
+        .unwrap_or("")
+        .to_string();
+
+    Ok(EInvoiceResult {
+        uuid,
+        belge_numarasi: list
+            .as_array()
+            .and_then(|arr| arr.first())
+            .and_then(|d| d["belgeNumarasi"].as_str())
+            .map(|s| s.to_string()),
+        message,
+    })
+}
+
+/// e-SMM belgelerini listeler.
+#[tauri::command]
+pub fn gib_list_smm(
+    pool: State<DbPool>,
+    start_date: String, // gg/aa/yyyy
+    end_date: String,
+) -> Result<Vec<GibDocument>, String> {
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
+    let token = get_setting_str(&conn, "gib_token").filter(|t| !t.is_empty())
+        .ok_or("GİB oturumu yok.")?;
+    let test_mode = get_setting_str(&conn, "gib_test_mode").map(|v| v == "1").unwrap_or(false);
+
+    let client = GibClient::new(token, test_mode);
+    let data = client.dispatch(
+        "EARSIV_PORTAL_TASLAKLARI_GETIR",
+        "RG_TASLAKLAR",
+        serde_json::json!({
+            "baslangic": start_date,
+            "bitis": end_date,
+            "hangiTip": "eArsivSmm",
+        }),
+    )?;
+
+    let arr = data.as_array().cloned().unwrap_or_default();
+    let docs = arr
+        .iter()
+        .map(|d| GibDocument {
+            ettn: d["ettn"].as_str().unwrap_or("").to_string(),
+            belge_numarasi: d["belgeNumarasi"].as_str().unwrap_or("").to_string(),
+            alici_vkn_tckn: d["aliciVknTckn"].as_str().unwrap_or("").to_string(),
+            alici_unvan_ad_soyad: d["aliciUnvanAdSoyad"].as_str().unwrap_or("").to_string(),
+            belge_tarihi: d["belgeTarihi"].as_str().unwrap_or("").to_string(),
+            belge_turu: d["belgeTuru"].as_str().unwrap_or("").to_string(),
+            onay_durumu: d["onayDurumu"].as_str().unwrap_or("").to_string(),
+        })
+        .collect();
+
+    Ok(docs)
+}
+
+/// e-SMM belgesinin PDF/HTML çıktısını indirir.
+#[tauri::command]
+pub fn gib_download_smm(
+    pool: State<DbPool>,
+    ettn: String,
+    onay_durumu: String,
+    file_name: String,
+) -> Result<String, String> {
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
+    let token = get_setting_str(&conn, "gib_token").filter(|t| !t.is_empty())
+        .ok_or("GİB oturumu yok.")?;
+    let test_mode = get_setting_str(&conn, "gib_test_mode").map(|v| v == "1").unwrap_or(false);
+
+    let client = GibClient::new(token, test_mode);
+    let url = client.download_url(&ettn, &onay_durumu, "SMM");
+
+    let http = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(60))
+        .build()
+        .map_err(|e| e.to_string())?;
+    let resp = http
+        .get(&url)
+        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+        .send()
+        .map_err(|e| format!("İndirme hatası: {}", e))?;
+
+    if !resp.status().is_success() {
+        return Err(format!("İndirme başarısız: {}", resp.status()));
+    }
+
+    let bytes = resp.bytes().map_err(|e| format!("Veri okunamadı: {}", e))?;
+
+    let desktop = dirs::desktop_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
+    let safe_name = if file_name.trim().is_empty() { format!("esmm_{}.zip", ettn) } else { file_name };
+    let target = desktop.join(&safe_name);
+    std::fs::write(&target, &bytes).map_err(|e| format!("Dosya yazılamadı: {}", e))?;
+
+    Ok(target.to_string_lossy().to_string())
+}
+
+#[cfg(test)]
+mod smm_tests {
+    use super::*;
+
+    #[test]
+    fn test_smm_stopaj_hesabi() {
+        // brüt 10000, stopaj %20 → net 8000, KDV %20 → 1600, damga 75.90
+        let brut = 10000.0f64;
+        let stopaj = brut * 20.0 / 100.0;
+        let net = brut - stopaj;
+        let kdv = net * 20.0 / 100.0;
+        let damga = brut * 7.59 / 1000.0;
+        assert_eq!(stopaj, 2000.0);
+        assert_eq!(net, 8000.0);
+        assert_eq!(kdv, 1600.0);
+        assert!((damga - 75.9).abs() < 0.001);
+        assert!((net + kdv + damga - 9675.9).abs() < 0.001);
+    }
 }

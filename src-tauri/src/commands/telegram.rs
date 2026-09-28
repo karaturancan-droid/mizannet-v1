@@ -11,6 +11,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use reqwest::blocking::Client;
 use std::thread;
 use std::time::Duration;
+use tauri::Emitter;
 
 lazy_static::lazy_static! {
     static ref TELEGRAM_WORKER_RUNNING: AtomicBool = AtomicBool::new(false);
@@ -70,10 +71,11 @@ pub fn list_telegram_bots(pool: State<DbPool>) -> Result<Vec<TelegramBot>, Strin
 }
 
 #[tauri::command]
-pub fn save_telegram_bot(bot_token: String, pool: State<DbPool>) -> Result<TelegramBot, String> {
+pub fn save_telegram_bot(app: tauri::AppHandle, bot_token: String, pool: State<DbPool>) -> Result<TelegramBot, String> {
     let conn = pool.get_conn().map_err(|e| e.to_string())?;
     let id = Uuid::new_v4().to_string();
     let now = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let _ = app.emit("telegram_update", ());
     
     // Yalnızca 1 adet aktif bot tutacağımız için eskileri siliyoruz (opsiyonel)
     conn.execute("DELETE FROM telegram_bots", []).map_err(|e| e.to_string())?;
@@ -94,9 +96,10 @@ pub fn save_telegram_bot(bot_token: String, pool: State<DbPool>) -> Result<Teleg
 }
 
 #[tauri::command]
-pub fn delete_telegram_bot(id: String, pool: State<DbPool>) -> Result<(), String> {
+pub fn delete_telegram_bot(app: tauri::AppHandle, id: String, pool: State<DbPool>) -> Result<(), String> {
     let conn = pool.get_conn().map_err(|e| e.to_string())?;
     conn.execute("DELETE FROM telegram_bots WHERE id = ?1", [&id]).map_err(|e| e.to_string())?;
+    let _ = app.emit("telegram_update", ());
     Ok(())
 }
 
@@ -112,9 +115,9 @@ pub fn list_telegram_requests(pool: State<DbPool>) -> Result<Vec<TelegramRequest
 }
 
 #[tauri::command]
-pub fn update_telegram_request_status(id: String, status: String, pool: State<DbPool>) -> Result<(), String> {
+pub fn update_telegram_request_status(app: tauri::AppHandle, id: String, status: String, pool: State<DbPool>) -> Result<(), String> {
     let conn = pool.get_conn().map_err(|e| e.to_string())?;
-    TelegramRepository::update_request_status(&conn, &id, &status)
+    let res = TelegramRepository::update_request_status(&conn, &id, &status); let _ = app.emit("telegram_update", ()); res
 }
 
 #[tauri::command]
@@ -173,9 +176,10 @@ pub fn list_telegram_drafts(pool: State<DbPool>) -> Result<Vec<TelegramDraft>, S
 
 
 #[tauri::command]
-pub fn delete_telegram_draft(id: String, pool: State<DbPool>) -> Result<(), String> {
+pub fn delete_telegram_draft(app: tauri::AppHandle, id: String, pool: State<DbPool>) -> Result<(), String> {
     let conn = pool.get_conn().map_err(|e| e.to_string())?;
     conn.execute("DELETE FROM telegram_drafts WHERE id = ?1", [&id]).map_err(|e| e.to_string())?;
+    let _ = app.emit("telegram_update", ());
     Ok(())
 }
 
@@ -463,6 +467,7 @@ Format:
         );
         send_telegram_message(bot_token, &chat_id, "Erişim izniniz yok. Talebiniz yöneticiye iletildi.");
     }
+    let _ = app.emit("telegram_update", ());
 }
 
 #[tauri::command]

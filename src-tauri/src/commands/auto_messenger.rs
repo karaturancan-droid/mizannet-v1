@@ -275,7 +275,7 @@ fn format_turkish_number(n: f64) -> String {
             }
         })
         .collect();
-    format!(",{}", parts[1]) + &format!("{}", int_part.chars().rev().collect::<String>())
+    format!(",{}", parts[1]) + &int_part.chars().rev().collect::<String>().to_string()
 }
 
 /// Otomatik bildirim worker'ını başlatır (uygulama açılışında çağrılır).
@@ -355,13 +355,32 @@ pub fn trigger_messenger_now(pool: State<DbPool>) -> Result<usize, String> {
 // ---------------------------------------------------------------------------
 // Web sitesi entegrasyonu (mizannet-web): hesap girişi + lisans senkronu
 // ---------------------------------------------------------------------------
-// Web sitesi: D:\Web-Siteleri\mizannet-web
-// API uçları:
-//   POST /api/desktop/login    → { email, password } → { token }
+// API uçları (web_base_url() ile çözülür):
+//   POST /api/desktop/login    → { email, password } → { token, user, subscription }
 //   GET  /api/desktop/verify   → Bearer token → { user, subscription }
 //   POST /api/desktop/activate → Bearer token + { key } → lisans etkinleştirme
+// subscription alanları: plan, status, entitled, license_key, license_end, days_left, source
 
-#[derive(serde::Serialize)]
+use std::sync::atomic::AtomicU64;
+
+/// Son başarılı web_verify unix zaman damgası (saniye).
+static LAST_WEB_SYNC: AtomicU64 = AtomicU64::new(0);
+
+/// Son senkron üzerinden geçen süre (saniye); hiç senkron yoksa u64::MAX.
+pub fn seconds_since_last_web_sync() -> u64 {
+    let last = LAST_WEB_SYNC.load(Ordering::Relaxed);
+    if last == 0 {
+        u64::MAX
+    } else {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0)
+            .saturating_sub(last)
+    }
+}
+
+#[derive(serde::Serialize, Clone, Default)]
 pub struct WebAccountStatus {
     pub logged_in: bool,
     pub user_name: Option<String>,
@@ -369,10 +388,34 @@ pub struct WebAccountStatus {
     pub plan: Option<String>,
     pub subscription_status: Option<String>,
     pub trial_end: Option<String>,
+    // Zenginleştirilmiş alanlar (web /verify yanıtından):
+    pub entitled: Option<bool>,
+    pub license_key: Option<String>,
+    pub license_end: Option<String>,
+    pub days_left: Option<i64>,
+    pub source: Option<String>,
     pub error: Option<String>,
 }
 
-const WEB_BASE_URL: &str = "https://mizannet.com";
+/// Web sunucu adresi:
+/// 1. MIZANNET_WEB_URL env değişkeni (geliştirme: http://localhost:3000)
+/// 2. Debug derlemelerinde varsayılan http://localhost:3000
+/// 3. Release derlemelerinde https://mizannet.com
+pub fn web_base_url() -> String {
+    if let Ok(url) = std::env::var("MIZANNET_WEB_URL") {
+        let trimmed = url.trim().trim_end_matches('/').to_string();
+        if !trimmed.is_empty() {
+            return trimmed;
+        }
+    }
+    if cfg!(debug_assertions) {
+        "http://localhost:3000".to_string()
+    } else {
+        "https://mizannet.com".to_string()
+    }
+}
+
+const WEB_BASE_URL: &str = ""; // yerine her çağrıda web_base_url() kullanılır
 
 fn web_token_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
     let config_dir = app
@@ -403,7 +446,7 @@ pub fn web_login(
         .map_err(|e| e.to_string())?;
 
     // 1) Giriş isteği
-    let login_url = format!("{}/api/desktop/login", WEB_BASE_URL);
+    let login_url = format!("{}/api/desktop/login", web_base_url());
     let resp = client
         .post(&login_url)
         .json(&serde_json::json!({ "email": email, "password": password }))
@@ -414,12 +457,8 @@ pub fn web_login(
         Err(e) => {
             return Ok(WebAccountStatus {
                 logged_in: false,
-                user_name: None,
-                user_email: None,
-                plan: None,
-                subscription_status: None,
-                trial_end: None,
                 error: Some(format!("Web sunucusuna ulaşılamadı: {}", e)),
+                ..Default::default()
             })
         }
     };
@@ -429,12 +468,8 @@ pub fn web_login(
         let body = resp.text().unwrap_or_default();
         return Ok(WebAccountStatus {
             logged_in: false,
-            user_name: None,
-            user_email: None,
-            plan: None,
-            subscription_status: None,
-            trial_end: None,
             error: Some(format!("Giriş başarısız ({}): {}", status, body)),
+            ..Default::default()
         });
     }
 
@@ -445,12 +480,8 @@ pub fn web_login(
     if token.is_empty() {
         return Ok(WebAccountStatus {
             logged_in: false,
-            user_name: None,
-            user_email: None,
-            plan: None,
-            subscription_status: None,
-            trial_end: None,
             error: Some("Token alınamadı".to_string()),
+            ..Default::default()
         });
     }
 
@@ -470,18 +501,31 @@ pub fn web_verify(app: tauri::AppHandle, pool: State<DbPool>) -> Result<WebAccou
     web_verify_internal(&app, &pool)
 }
 
+/// Yanıttan subscription alanlarını WebAccountStatus'a kopyalar.
+fn parse_subscription(json: &serde_json::Value) -> WebAccountStatus {
+    WebAccountStatus {
+        logged_in: true,
+        user_name: json["user"]["name"].as_str().map(|s| s.to_string()),
+        user_email: json["user"]["email"].as_str().map(|s| s.to_string()),
+        plan: json["subscription"]["plan"].as_str().map(|s| s.to_string()),
+        subscription_status: json["subscription"]["status"].as_str().map(|s| s.to_string()),
+        trial_end: json["subscription"]["license_end"]
+            .as_str()
+            .or_else(|| json["subscription"]["trial_end"].as_str())
+            .map(|s| s.to_string()),
+        entitled: json["subscription"]["entitled"].as_bool(),
+        license_key: json["subscription"]["license_key"].as_str().map(|s| s.to_string()),
+        license_end: json["subscription"]["license_end"].as_str().map(|s| s.to_string()),
+        days_left: json["subscription"]["days_left"].as_i64(),
+        source: json["subscription"]["source"].as_str().map(|s| s.to_string()),
+        error: None,
+    }
+}
+
 fn web_verify_internal(app: &tauri::AppHandle, _pool: &DbPool) -> Result<WebAccountStatus, String> {
     let token_path = web_token_path(app)?;
     if !token_path.exists() {
-        return Ok(WebAccountStatus {
-            logged_in: false,
-            user_name: None,
-            user_email: None,
-            plan: None,
-            subscription_status: None,
-            trial_end: None,
-            error: None,
-        });
+        return Ok(WebAccountStatus::default());
     }
 
     let content = std::fs::read_to_string(&token_path).map_err(|e| e.to_string())?;
@@ -492,7 +536,7 @@ fn web_verify_internal(app: &tauri::AppHandle, _pool: &DbPool) -> Result<WebAcco
         .build()
         .map_err(|e| e.to_string())?;
 
-    let verify_url = format!("{}/api/desktop/verify", WEB_BASE_URL);
+    let verify_url = format!("{}/api/desktop/verify", web_base_url());
     let resp = client
         .get(&verify_url)
         .bearer_auth(&account.token)
@@ -505,10 +549,8 @@ fn web_verify_internal(app: &tauri::AppHandle, _pool: &DbPool) -> Result<WebAcco
                 logged_in: true,
                 user_name: Some(account.name),
                 user_email: Some(account.email),
-                plan: None,
-                subscription_status: None,
-                trial_end: None,
                 error: Some(format!("Sunucuya ulaşılamadı (çevrimdışı mod): {}", e)),
+                ..Default::default()
             })
         }
     };
@@ -516,26 +558,21 @@ fn web_verify_internal(app: &tauri::AppHandle, _pool: &DbPool) -> Result<WebAcco
     if !resp.status().is_success() {
         return Ok(WebAccountStatus {
             logged_in: false,
-            user_name: None,
-            user_email: None,
-            plan: None,
-            subscription_status: None,
-            trial_end: None,
             error: Some(format!("Oturum doğrulanamadı ({}). Tekrar giriş yapın.", resp.status())),
+            ..Default::default()
         });
     }
 
     let json: serde_json::Value = resp.json().map_err(|e| format!("Yanıt okunamadı: {}", e))?;
+    LAST_WEB_SYNC.store(
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0),
+        Ordering::Relaxed,
+    );
 
-    Ok(WebAccountStatus {
-        logged_in: true,
-        user_name: json["user"]["name"].as_str().map(|s| s.to_string()),
-        user_email: json["user"]["email"].as_str().map(|s| s.to_string()),
-        plan: json["subscription"]["plan"].as_str().map(|s| s.to_string()),
-        subscription_status: json["subscription"]["status"].as_str().map(|s| s.to_string()),
-        trial_end: json["subscription"]["trial_end"].as_str().map(|s| s.to_string()),
-        error: None,
-    })
+    Ok(parse_subscription(&json))
 }
 
 /// Web sitesinden satın alınan lisans anahtarını etkinleştirir.
@@ -556,7 +593,7 @@ pub fn web_activate_license(
         .build()
         .map_err(|e| e.to_string())?;
 
-    let activate_url = format!("{}/api/desktop/activate", WEB_BASE_URL);
+    let activate_url = format!("{}/api/desktop/activate", web_base_url());
     let resp = client
         .post(&activate_url)
         .bearer_auth(&account.token)
@@ -568,6 +605,13 @@ pub fn web_activate_license(
     let json: serde_json::Value = resp.json().unwrap_or_default();
 
     if status.is_success() {
+        LAST_WEB_SYNC.store(
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0),
+            Ordering::Relaxed,
+        );
         Ok(json["message"].as_str().unwrap_or("Lisans etkinleştirildi.").to_string())
     } else {
         Err(json["error"].as_str().unwrap_or("Etkinleştirme başarısız").to_string())

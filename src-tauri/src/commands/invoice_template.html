@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<title>{title} — {invoice_no}</title>
+<style>
+  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+  body {{ font-family: 'Segoe UI', Arial, sans-serif; color: #1a1a2e; background: #fff; padding: 40px; }}
+  .head {{ display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid {accent}; padding-bottom: 20px; }}
+  .brand {{ display: flex; gap: 14px; align-items: center; }}
+  .brand h1 {{ font-size: 20px; }}
+  .brand small {{ color: #666; display: block; margin-top: 2px; }}
+  .meta {{ text-align: right; font-size: 13px; color: #444; }}
+  .meta .no {{ font-size: 16px; font-weight: 600; color: {accent}; }}
+  .client {{ margin: 24px 0; font-size: 14px; }}
+  .client b {{ color: #000; }}
+  table {{ width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }}
+  th {{ background: {accent}; color: #fff; text-align: left; padding: 8px 10px; }}
+  th:nth-child(2), th:nth-child(3), th:nth-child(4) {{ text-align: right; }}
+  td {{ padding: 8px 10px; border-bottom: 1px solid #eee; }}
+  .totals {{ margin-top: 16px; margin-left: auto; width: 280px; font-size: 14px; }}
+  .totals div {{ display: flex; justify-content: space-between; padding: 5px 0; }}
+  .totals .grand {{ border-top: 2px solid {accent}; font-weight: 700; font-size: 16px; padding-top: 8px; margin-top: 4px; }}
+  .note {{ margin-top: 20px; font-size: 12.5px; background: #f7f8fa; border-left: 3px solid {accent}; padding: 10px 14px; }}
+  .footer {{ margin-top: 32px; font-size: 11.5px; color: #888; border-top: 1px solid #eee; padding-top: 12px; }}
+</style>
+</head>
+<body>
+  <div class="head">
+    <div class="brand">
+      {logo}
+      <div>
+        <h1>{company}</h1>
+        <small>VKN: {tax_no} · {phone} · {email}</small>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="no">{title}</div>
+      <div>No: {invoice_no}</div>
+      <div>Tarih: {date}</div>
+    </div>
+  </div>
+
+  <div class="client">
+    <b>Alıcı:</b> {client}
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>Ürün / Hizmet</th><th>Miktar</th><th>Birim Fiyat</th><th>Toplam</th></tr>
+    </thead>
+    <tbody>{rows}</tbody>
+  </table>
+
+  <div class="totals">
+    <div><span>Ara Toplam</span><span>{subtotal} ₺</span></div>
+    <div><span>KDV</span><span>{vat} ₺</span></div>
+    <div class="grand"><span>Genel Toplam</span><span>{total} ₺</span></div>
+  </div>
+
+  <div class="note">{note}</div>
+  <div class="footer">{footer}</div>
+</body>
+</html>

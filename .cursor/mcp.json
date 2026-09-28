@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "visual-sandbox": {
+      "type": "http",
+      "url": "https://visualsandbox.com/mcp"
+    }
+  }
+}

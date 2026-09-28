@@ -89,7 +89,24 @@ export function FaturaAktarimPage() {
       {step === 'preview' && invoice && (
         <InvoicePreview
           invoice={invoice}
-          onConfirm={async () => setStep('approval')}
+          onConfirm={async () => {
+            if (invoice?.id) {
+              try {
+                // Remove readonly fields that backend does not expect in update_invoice
+                const { status, created_at, ...updateData } = invoice;
+                await updateInvoice(invoice.id, updateData);
+                setStep('approval');
+              } catch (err) {
+                addToast({
+                  title: 'Güncelleme başarısız',
+                  description: err instanceof Error ? err.message : 'Fatura güncellenemedi',
+                  variant: 'destructive',
+                });
+              }
+            } else {
+              setStep('approval');
+            }
+          }}
           onBack={() => setStep('upload')}
           onUpdate={handleUpdate}
           isLoading={loading}

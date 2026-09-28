@@ -18,6 +18,8 @@ export interface Settings {
   setup_complete?: string;
   salary_payment_day?: string;
   profile_image?: string;
+  network_mode?: string;
+  server_ip?: string;
 }
 
 export function useAyarlar() {
@@ -62,7 +64,7 @@ export function useAyarlar() {
     setLoading(true);
     setError(null);
     try {
-      const keys = ['company_name', 'tax_no', 'phone', 'email', 'contact_person', 'abacus_api_key', 'ai_provider', 'google_api_key', 'openai_api_key', 'huggingface_api_key', 'industry_type', 'setup_complete'];
+      const keys = ['company_name', 'tax_no', 'phone', 'email', 'contact_person', 'abacus_api_key', 'ai_provider', 'google_api_key', 'openai_api_key', 'huggingface_api_key', 'industry_type', 'setup_complete', 'network_mode', 'server_ip'];
       const result: Settings = {};
 
       await Promise.all(

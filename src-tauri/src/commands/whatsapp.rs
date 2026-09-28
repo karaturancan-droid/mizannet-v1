@@ -2,6 +2,12 @@ use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
 use tauri::{AppHandle, State};
 use serde::{Deserialize, Serialize};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
+
+lazy_static::lazy_static! {
+    static ref WHATSAPP_POLLER_RUNNING: AtomicBool = AtomicBool::new(false);
+}
 
 pub struct WhatsAppProcess(pub Mutex<Option<Child>>);
 
@@ -87,7 +93,7 @@ pub fn get_worker_path(app: &AppHandle) -> std::path::PathBuf {
 }
 
 #[tauri::command]
-pub fn start_whatsapp_worker(app: AppHandle, state: State<'_, WhatsAppProcess>) -> Result<bool, String> {
+pub fn start_whatsapp_worker(app: AppHandle, state: State<'_, WhatsAppProcess>, pool: State<'_, DbPool>) -> Result<bool, String> {
     let mut process_guard = state.0.lock().unwrap();
 
     if let Some(child) = process_guard.as_mut() {
@@ -143,6 +149,7 @@ pub fn start_whatsapp_worker(app: AppHandle, state: State<'_, WhatsAppProcess>) 
 
 #[tauri::command]
 pub fn stop_whatsapp_worker(state: State<'_, WhatsAppProcess>) -> Result<bool, String> {
+    WHATSAPP_POLLER_RUNNING.store(false, Ordering::SeqCst);
     let mut process_guard = state.0.lock().unwrap();
     if let Some(mut child) = process_guard.take() {
         let _ = child.kill();
@@ -237,7 +244,18 @@ pub fn sync_whatsapp_messages(app: tauri::AppHandle, pool: State<'_, DbPool>) ->
                 Err(_) => continue,
             };
             
-            let id = uuid::Uuid::new_v4().to_string();
+            
+                                let is_allowed: bool = conn.query_row(
+                                    "SELECT COUNT(*) FROM whatsapp_allowlist WHERE phone_number = ?1 AND status = 'approved'",
+                                    [&msg.sender_number],
+                                    |row| row.get::<_, i64>(0)
+                                ).map(|c| c > 0).unwrap_or(false);
+                                
+                                if !is_allowed {
+                                    continue;
+                                }
+
+                                let id = uuid::Uuid::new_v4().to_string();
             let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
             
             let system_prompt = "Gelen WhatsApp mesajını analiz et. Eğer kullanıcı faturadan, ödemeden, cari hesaba borç/alacak kaydından ya da stok ekleme/çıkarmadan bahsediyorsa, sadece ve sadece şu JSON formatında bir öneri dön (başka açıklama yazma):
