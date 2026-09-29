@@ -155,7 +155,7 @@ export function WorkerForm({
             <Label htmlFor="full_name">Ad Soyad *</Label>
             <Input
               id="full_name"
-              placeholder="Adı Soyadı"
+              
               value={formData.full_name}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, full_name: e.target.value }))
@@ -168,7 +168,7 @@ export function WorkerForm({
               <Label htmlFor="tc_no">TC Kimlik No</Label>
               <Input
                 id="tc_no"
-                placeholder="12345678901"
+                
                 value={formData.tc_no}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, tc_no: e.target.value }))
@@ -194,7 +194,7 @@ export function WorkerForm({
               <Label htmlFor="phone">Telefon</Label>
               <Input
                 id="phone"
-                placeholder="0555..."
+                
                 value={formData.phone}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, phone: e.target.value }))
@@ -205,7 +205,7 @@ export function WorkerForm({
               <Label htmlFor="email">E-posta</Label>
               <Input
                 id="email"
-                placeholder="ornek@mail.com"
+                
                 value={formData.email}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, email: e.target.value }))
@@ -244,7 +244,7 @@ export function WorkerForm({
             <Label htmlFor="position">Pozisyon</Label>
             <Input
               id="position"
-              placeholder="Pozisyon"
+              
               value={formData.position}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, position: e.target.value }))
@@ -257,7 +257,7 @@ export function WorkerForm({
               <Label htmlFor="sgk_no">SGK No</Label>
               <Input
                 id="sgk_no"
-                placeholder="SGK Numarası"
+                
                 value={formData.sgk_no}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, sgk_no: e.target.value }))
@@ -269,7 +269,7 @@ export function WorkerForm({
               <Label htmlFor="iban">IBAN</Label>
               <Input
                 id="iban"
-                placeholder="TR..."
+                
                 value={formData.iban}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, iban: e.target.value }))
@@ -284,7 +284,7 @@ export function WorkerForm({
               <Input
                 id="salary"
                 type="number"
-                placeholder="0.00"
+                
                 step="0.01"
                 value={formData.salary}
                 onChange={(e) =>

@@ -114,7 +114,7 @@ export function AssistantButton() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              placeholder={isLoading ? "Yanıt bekleniyor..." : "Mesajınızı yazın..."}
+              
               className="h-9 flex-1 rounded-md border border-border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary disabled:opacity-50"
             />
             <button

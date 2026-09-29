@@ -86,7 +86,7 @@ export function DeleteDialog({
         </DialogHeader>
         <div className="space-y-4">
           <Input
-            placeholder="SİL"
+            
             value={verificationText}
             onChange={(e) => setVerificationText(e.target.value.toUpperCase())}
             disabled={isLoading}

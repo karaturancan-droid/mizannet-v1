@@ -107,7 +107,7 @@ export function OvertimeForm({
             <Input
               id="hours"
               type="number"
-              placeholder="0.00"
+              
               step="0.5"
               value={formData.hours}
               onChange={(e) =>
@@ -121,7 +121,7 @@ export function OvertimeForm({
             <Input
               id="rate"
               type="number"
-              placeholder="1.5"
+              
               step="0.1"
               value={formData.rate}
               onChange={(e) =>

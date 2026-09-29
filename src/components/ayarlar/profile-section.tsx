@@ -72,7 +72,7 @@ export function ProfileSection() {
             id="company_name"
             value={formData.company_name || ''}
             onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-            placeholder="İşletme adı"
+            
             disabled={isSaving}
           />
         </div>
@@ -83,7 +83,7 @@ export function ProfileSection() {
             id="tax_no"
             value={formData.tax_no || ''}
             onChange={(e) => setFormData({ ...formData, tax_no: e.target.value })}
-            placeholder="Vergi Kimlik Numarası"
+            
             disabled={isSaving}
           />
         </div>
@@ -95,7 +95,7 @@ export function ProfileSection() {
               id="phone"
               value={formData.phone || ''}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              placeholder="+90 5XX XXX XXXX"
+              
               disabled={isSaving}
             />
           </div>
@@ -107,7 +107,7 @@ export function ProfileSection() {
               type="email"
               value={formData.email || ''}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="info@example.com"
+              
               disabled={isSaving}
             />
           </div>
@@ -119,7 +119,7 @@ export function ProfileSection() {
             id="contact_person"
             value={formData.contact_person || ''}
             onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
-            placeholder="Ad Soyad"
+            
             disabled={isSaving}
           />
         </div>
@@ -133,7 +133,7 @@ export function ProfileSection() {
             max="31"
             value={formData.salary_payment_day || '5'}
             onChange={(e) => setFormData({ ...formData, salary_payment_day: e.target.value })}
-            placeholder="Örn: 5"
+            
             disabled={isSaving}
           />
           <p className="text-xs text-muted-foreground mt-1">

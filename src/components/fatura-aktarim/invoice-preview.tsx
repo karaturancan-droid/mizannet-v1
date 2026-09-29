@@ -49,7 +49,7 @@ export function InvoicePreview({
               id="company_id"
               value={formData.company_id || ''}
               onChange={(e) => handleChange('company_id', e.target.value)}
-              placeholder="Firma ID"
+              
               disabled={isLoading}
             />
           </div>
@@ -60,7 +60,7 @@ export function InvoicePreview({
               id="invoice_no"
               value={formData.invoice_no || ''}
               onChange={(e) => handleChange('invoice_no', e.target.value)}
-              placeholder="Fatura numarası"
+              
               disabled={isLoading}
             />
           </div>
@@ -84,7 +84,7 @@ export function InvoicePreview({
               id="iban"
               value={formData.iban || ''}
               onChange={(e) => handleChange('iban', e.target.value)}
-              placeholder="TR..."
+              
               disabled={isLoading}
             />
           </div>
@@ -99,7 +99,7 @@ export function InvoicePreview({
               step="0.01"
               value={formData.subtotal || ''}
               onChange={(e) => handleChange('subtotal', parseFloat(e.target.value))}
-              placeholder="0.00"
+              
               disabled={isLoading}
             />
           </div>
@@ -112,7 +112,7 @@ export function InvoicePreview({
               step="0.01"
               value={formData.vat_amount || ''}
               onChange={(e) => handleChange('vat_amount', parseFloat(e.target.value))}
-              placeholder="0.00"
+              
               disabled={isLoading}
             />
           </div>
@@ -125,7 +125,7 @@ export function InvoicePreview({
               step="0.01"
               value={formData.total || ''}
               onChange={(e) => handleChange('total', parseFloat(e.target.value))}
-              placeholder="0.00"
+              
               disabled={isLoading}
             />
           </div>

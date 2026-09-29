@@ -122,7 +122,7 @@ export function CompanyForm({
             <Label htmlFor="name">Firma Adı *</Label>
             <Input
               id="name"
-              placeholder="Örn: ABC Madencilik Ltd. Şti."
+              
               value={formData.name}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, name: e.target.value }))
@@ -140,7 +140,7 @@ export function CompanyForm({
             <Label htmlFor="tax_no">Vergi Kimlik Numarası (VKN)</Label>
             <Input
               id="tax_no"
-              placeholder="Örn: 1234567890"
+              
               value={formData.tax_no}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, tax_no: e.target.value }))
@@ -154,7 +154,7 @@ export function CompanyForm({
             <Label htmlFor="phone">Telefon</Label>
             <Input
               id="phone"
-              placeholder="Örn: +90 212 123 45 67"
+              
               value={formData.phone}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, phone: e.target.value }))
@@ -169,7 +169,7 @@ export function CompanyForm({
             <Input
               id="email"
               type="email"
-              placeholder="Örn: info@firma.com"
+              
               value={formData.email}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, email: e.target.value }))
@@ -187,7 +187,7 @@ export function CompanyForm({
             <Label htmlFor="contact_person">Yetkili Kişi</Label>
             <Input
               id="contact_person"
-              placeholder="Örn: Ahmet Yılmaz"
+              
               value={formData.contact_person}
               onChange={(e) =>
                 setFormData((prev) => ({

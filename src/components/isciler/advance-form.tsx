@@ -82,7 +82,7 @@ export function AdvanceForm({
             <Input
               id="description"
               type="text"
-              placeholder="Örn: Nakit avans"
+              
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               disabled={isLoading}

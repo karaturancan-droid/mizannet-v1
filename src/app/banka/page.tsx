@@ -37,7 +37,7 @@ export default function BankaPage() {
             Tüm banka hesaplarınızı tek ekrandan takip edin ve cari hesaplara otomatik işleyin.
           </p>
         </div>
-        <Button onClick={() => alert("Bu modül/özellik henüz yapım aşamasındadır. Yakında aktif olacaktır.")} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl">
+        <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl">
           <Download className="h-4 w-4" /> Hareketleri Çek
         </Button>
       </div>
@@ -111,15 +111,15 @@ export default function BankaPage() {
           <form onSubmit={handleAddBank} className="space-y-4">
             <div className="space-y-2">
               <Label>Banka Adı (Örn: Garanti BBVA)</Label>
-              <Input name="bankName" required placeholder="Banka adını girin..." />
+              <Input name="bankName" required  />
             </div>
             <div className="space-y-2">
               <Label>IBAN Numarası</Label>
-              <Input name="iban" required placeholder="TR00 0000..." />
+              <Input name="iban" required  />
             </div>
             <div className="space-y-2">
               <Label>Açılış Bakiyesi (₺)</Label>
-              <Input name="balance" type="text" placeholder="0,00 ₺" defaultValue="0,00 ₺" />
+              <Input name="balance" type="text"  defaultValue="0,00 ₺" />
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowAddBank(false)}>İptal</Button>

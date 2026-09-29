@@ -110,7 +110,7 @@ export function InputArea({ onSendMessage, isLoading, onFileSelect, isAnalyzing 
       </Button>
 
       <Input
-        placeholder="İstediğin bir şeyi sor"
+        
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         onKeyPress={handleKeyPress}

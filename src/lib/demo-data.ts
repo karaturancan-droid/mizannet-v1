@@ -119,14 +119,14 @@ export const DEMO_NOTIFICATIONS = [
 ];
 
 export const DEMO_SETTINGS: Record<string, string> = {
-  company_name: 'Madenova Madencilik Ltd.',
-  tax_no: '1230984576',
-  phone: '0312 999 88 77',
-  email: 'info@madenova.com.tr',
-  contact_person: 'Kemal Madenci',
-  ai_provider: 'google',
-  industry_type: 'hafriyat_maden',
-  setup_complete: '1',
+  company_name: '',
+  tax_no: '',
+  phone: '',
+  email: '',
+  contact_person: '',
+  ai_provider: 'local',
+  industry_type: '',
+  setup_complete: '0',
 };
 
 export const DEMO_CHAT_SESSIONS = [

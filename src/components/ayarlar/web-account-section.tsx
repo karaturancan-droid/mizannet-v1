@@ -165,7 +165,7 @@ export function WebAccountSection() {
               <Input
                 id="web-email"
                 type="email"
-                placeholder="ornek@firma.com"
+                
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
@@ -176,7 +176,7 @@ export function WebAccountSection() {
               <Input
                 id="web-password"
                 type="password"
-                placeholder="••••••••"
+                
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
@@ -284,7 +284,7 @@ export function WebAccountSection() {
               </p>
               <div className="flex gap-2">
                 <Input
-                  placeholder="MIZANNET-XXXX-XXXX-XXXX"
+                  
                   value={licenseKey}
                   onChange={(e) => setLicenseKey(e.target.value)}
                   disabled={isLoading}

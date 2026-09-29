@@ -208,7 +208,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Search className="w-4 h-4 text-zinc-400 mr-2" />
                 <input 
                   type="text" 
-                  placeholder="Ara (Modül, Sayfa)..." 
+                   
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setIsSearchFocused(true)}

@@ -160,7 +160,7 @@ export function LedgerForm({
             <Label htmlFor="document_no">Belge No</Label>
             <Input
               id="document_no"
-              placeholder="Örn: FT-2024-001"
+              
               value={formData.document_no}
               onChange={(e) =>
                 setFormData((prev) => ({
@@ -177,7 +177,7 @@ export function LedgerForm({
             <Label htmlFor="description">Açıklama</Label>
             <Textarea
               id="description"
-              placeholder="Örn: Ürün satışı, Nakit ödeme, vb."
+              
               value={formData.description}
               onChange={(e) =>
                 setFormData((prev) => ({
@@ -196,7 +196,7 @@ export function LedgerForm({
               <Label htmlFor="debit">Firmadan Alacak (₺)</Label>
               <Input
                 id="debit"
-                placeholder="0,00"
+                
                 value={formData.debit}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, debit: e.target.value }))
@@ -213,7 +213,7 @@ export function LedgerForm({
               <Label htmlFor="credit">Firmaya Borç (₺)</Label>
               <Input
                 id="credit"
-                placeholder="0,00"
+                
                 value={formData.credit}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, credit: e.target.value }))
@@ -237,7 +237,7 @@ export function LedgerForm({
             <Label htmlFor="entry_type">Hareket Türü</Label>
             <Input
               id="entry_type"
-              placeholder="Örn: Satış, Ödeme, Geri İade, vb."
+              
               value={formData.entry_type}
               onChange={(e) =>
                 setFormData((prev) => ({

@@ -332,11 +332,11 @@ export function EInvoiceModule() {
         <CardContent className="space-y-4">
           <div className="grid gap-2">
             <Label>Kullanıcı Kodu (VKN)</Label>
-            <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="333333054" disabled={isLoggingIn} />
+            <Input value={username} onChange={(e) => setUsername(e.target.value)}  disabled={isLoggingIn} />
           </div>
           <div className="grid gap-2">
             <Label>Portal Şifresi</Label>
-            <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" onKeyPress={(e) => e.key === 'Enter' && handleLogin()} disabled={isLoggingIn} />
+            <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)}  onKeyPress={(e) => e.key === 'Enter' && handleLogin()} disabled={isLoggingIn} />
           </div>
           <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
             <input type="checkbox" checked={testMode} onChange={(e) => setTestMode(e.target.checked)} className="rounded" />
@@ -390,7 +390,7 @@ export function EInvoiceModule() {
             <Input
               value={smsCode}
               onChange={(e) => setSmsCode(e.target.value)}
-              placeholder="6 haneli kod"
+              
               maxLength={6}
               className="max-w-[160px] font-mono"
               disabled={isSigning}
@@ -418,7 +418,7 @@ export function EInvoiceModule() {
                   <Input
                     value={form.vkn_tckn}
                     onChange={(e) => setForm({ ...form, vkn_tckn: e.target.value.replace(/\D/g, '').slice(0, 11) })}
-                    placeholder="10 veya 11 hane"
+                    
                     disabled={isSubmitting}
                   />
                   <Button variant="outline" size="icon" onClick={handleQueryRecipient} disabled={isQuerying} title="GİB'den sorgula">
@@ -522,7 +522,7 @@ export function EInvoiceModule() {
                           items[i] = { ...item, mal_hizmet: e.target.value };
                           setForm({ ...form, items });
                         }}
-                        placeholder="Çimento, Nakliye..."
+                        
                         className="text-sm"
                         disabled={isSubmitting}
                       />
@@ -619,7 +619,7 @@ export function EInvoiceModule() {
 
             <div className="space-y-1">
               <Label>Fatura Notu</Label>
-              <Input value={form.not_aciklama} onChange={(e) => setForm({ ...form, not_aciklama: e.target.value })} placeholder="Yazı ile toplam tutar otomatik eklenmez; isterseniz yazın" disabled={isSubmitting} />
+              <Input value={form.not_aciklama} onChange={(e) => setForm({ ...form, not_aciklama: e.target.value })}  disabled={isSubmitting} />
             </div>
 
             <div className="flex justify-end gap-2 pt-2">

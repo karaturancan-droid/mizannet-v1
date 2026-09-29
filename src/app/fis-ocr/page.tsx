@@ -166,7 +166,7 @@ export default function FisOcrPage() {
                 <Label>Ödeme Yöntemi</Label>
                 <Input
                   value={draft.payment_method || ''}
-                  placeholder="nakit / kredi kartı / banka"
+                  
                   onChange={(e) => setDraft({ ...draft, payment_method: e.target.value })}
                 />
               </div>

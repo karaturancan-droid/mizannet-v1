@@ -523,7 +523,7 @@ export function ApiKeySection() {
                   <Input
                     value={customModelPath || localAiDir}
                     readOnly
-                    placeholder="Varsayılan Klasör"
+                    
                     className="bg-muted/40 font-mono text-xs"
                   />
                   <Button variant="outline" onClick={selectCustomFolder} className="shrink-0 gap-1.5 text-xs">
@@ -653,7 +653,7 @@ export function ApiKeySection() {
                   <Input
                     value={testPrompt}
                     onChange={(e) => setTestPrompt(e.target.value)}
-                    placeholder="Test mesajı yazın..."
+                    
                     className="text-xs bg-background"
                     onKeyDown={(e) => e.key === 'Enter' && handleTestChat()}
                   />

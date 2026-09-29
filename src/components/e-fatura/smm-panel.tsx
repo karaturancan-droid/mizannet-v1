@@ -276,7 +276,7 @@ export function SmmPanel() {
               <Input
                 value={form.vkn_tckn}
                 onChange={(e) => setForm({ ...form, vkn_tckn: e.target.value.replace(/\D/g, '') })}
-                placeholder="10 veya 11 hane"
+                
               />
             </div>
             <div className="space-y-1.5">
@@ -284,7 +284,7 @@ export function SmmPanel() {
               <Input
                 value={form.donem}
                 onChange={(e) => setForm({ ...form, donem: e.target.value })}
-                placeholder="09/2026"
+                
               />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
@@ -292,7 +292,7 @@ export function SmmPanel() {
               <Input
                 value={form.hizmet_aciklamasi}
                 onChange={(e) => setForm({ ...form, hizmet_aciklamasi: e.target.value })}
-                placeholder="Ör: Maden sahasında iş makineleri kiralama hizmeti"
+                
               />
             </div>
           </div>
@@ -374,7 +374,7 @@ export function SmmPanel() {
                 <Input
                   value={smsCode}
                   onChange={(e) => setSmsCode(e.target.value)}
-                  placeholder="SMS kodu"
+                  
                   maxLength={6}
                 />
                 <Button onClick={handleCompleteSms} disabled={isSigning || !smsCode.trim()}>

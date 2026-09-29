@@ -144,7 +144,7 @@ export default function TelegramPanel() {
                   type="text"
                   value={botToken}
                   onChange={(e) => setBotToken(e.target.value)}
-                  placeholder="123456789:AAH..."
+                  
                   className="flex-1 rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-zinc-900 focus:outline-none"
                 />
                 <button onClick={handleSaveBot} className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800">

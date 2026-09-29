@@ -136,7 +136,7 @@ export function InvoiceBrandingSection() {
                     onChange={(e) => setState((s) => ({ ...s, color: e.target.value.toUpperCase() }))}
                     className="h-9 w-14 rounded border cursor-pointer"
                   />
-                  <Input value={state.color} onChange={(e) => setState((s) => ({ ...s, color: e.target.value }))} placeholder="#0EA5E9" />
+                  <Input value={state.color} onChange={(e) => setState((s) => ({ ...s, color: e.target.value }))}  />
                 </div>
               </div>
               <div className="space-y-1.5">
@@ -157,7 +157,7 @@ export function InvoiceBrandingSection() {
               <Label>Fatura Alt Notu</Label>
               <Input
                 value={state.note}
-                placeholder="Ör: Ödeme 10 gün içinde yapılmalıdır."
+                
                 onChange={(e) => setState((s) => ({ ...s, note: e.target.value }))}
               />
             </div>
@@ -165,7 +165,7 @@ export function InvoiceBrandingSection() {
               <Label>Alt Bilgi (Footer)</Label>
               <Input
                 value={state.footer}
-                placeholder="Ör: IBAN TR.. · Firma adresi · Yasal metin"
+                
                 onChange={(e) => setState((s) => ({ ...s, footer: e.target.value }))}
               />
             </div>

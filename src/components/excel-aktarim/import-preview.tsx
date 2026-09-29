@@ -222,7 +222,7 @@ export function ImportPreview({
                 onValueChange={(val) => setColumnMapping(prev => ({...prev, [field.key]: val === "unmapped" ? "" : val}))}
               >
                 <SelectTrigger className="h-8 text-xs">
-                  <SelectValue placeholder="Eşleştirilmedi" />
+                  <SelectValue  />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="unmapped" className="text-muted-foreground italic">-- Atla --</SelectItem>

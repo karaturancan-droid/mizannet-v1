@@ -267,7 +267,7 @@ export function AiProviderSection() {
                       else setGoogleKey(e.target.value);
                       setTestResult(null);
                     }}
-                    placeholder={selectedProviderData.keyPlaceholder}
+                    
                     className="pr-10 font-mono text-sm"
                   />
                   <button

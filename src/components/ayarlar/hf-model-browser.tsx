@@ -191,6 +191,22 @@ export function HfModelBrowser({ onModelDownloaded, customDir, searchQuery }: Hf
         HuggingFace'deki tüm GGUF yapay zeka modelleri listeleniyor. Doğrudan <strong>"İndir"</strong> butonuna tıklayabilir veya <strong>"Dosyaları Gör"</strong> ile farklı versiyonları görebilirsiniz.
       </p>
 
+      {/* Önerilen Modeller */}
+      <div className="flex flex-wrap gap-2">
+        <span className="text-xs font-semibold flex items-center text-zinc-500 mr-2">
+          <Sparkles className="w-3.5 h-3.5 mr-1" /> Sisteme En Uygun Modeller:
+        </span>
+        <Button size="sm" variant="outline" className="h-7 text-xs rounded-full border-primary/20 text-primary hover:bg-primary/10" onClick={() => handleSearch(false, 'Qwen/Qwen2.5-7B-Instruct-GGUF')}>
+          Qwen 2.5 7B (Önerilen)
+        </Button>
+        <Button size="sm" variant="outline" className="h-7 text-xs rounded-full" onClick={() => handleSearch(false, 'unsloth/Meta-Llama-3.1-8B-Instruct-GGUF')}>
+          Llama 3.1 8B
+        </Button>
+        <Button size="sm" variant="outline" className="h-7 text-xs rounded-full" onClick={() => handleSearch(false, 'bartowski/gemma-2-9b-it-GGUF')}>
+          Gemma 2 9B
+        </Button>
+      </div>
+
       {/* İndirme İlerleme Çubuğu (global) */}
       {downloadingFile && (
         <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-lg p-3 shadow-sm">

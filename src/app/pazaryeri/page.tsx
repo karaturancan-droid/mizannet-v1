@@ -17,7 +17,7 @@ export default function PazaryeriPage() {
             Trendyol, Hepsiburada, N11 ve Amazon mağazalarınızdan gelen siparişleri tek ekranda yönetin.
           </p>
         </div>
-        <Button onClick={() => alert("Bu modül/özellik henüz yapım aşamasındadır. Yakında aktif olacaktır.")} className="gap-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl">
+        <Button className="gap-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl">
           <RefreshCw className="h-4 w-4" /> Siparişleri Senkronize Et
         </Button>
       </div>
@@ -54,7 +54,7 @@ export default function PazaryeriPage() {
           <p className="text-sm text-zinc-500 max-w-md mb-4">
             Siparişlerinizi ve stoklarınızı otomatik çekmek için API bilgilerinizle mağazalarınızı bağlayın.
           </p>
-          <Button onClick={() => alert("Bu modül/özellik henüz yapım aşamasındadır. Yakında aktif olacaktır.")} variant="outline" className="border-orange-200 text-orange-600 hover:bg-orange-50">
+          <Button variant="outline" className="border-orange-200 text-orange-600 hover:bg-orange-50">
             Yeni Mağaza Bağla
           </Button>
         </CardContent>

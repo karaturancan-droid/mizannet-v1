@@ -67,7 +67,7 @@ export function StockMovementForm({
               disabled={loading}
             >
               <SelectTrigger id="type">
-                <SelectValue placeholder="İşlem Türü" />
+                <SelectValue  />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="giriş">Giriş</SelectItem>
@@ -108,7 +108,7 @@ export function StockMovementForm({
               value={formData.note}
               onChange={(e) => setFormData({ ...formData, note: e.target.value })}
               disabled={loading}
-              placeholder="İsteğe bağlı not..."
+              
             />
           </div>
 

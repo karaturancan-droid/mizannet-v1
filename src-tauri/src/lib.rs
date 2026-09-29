@@ -1,6 +1,7 @@
 #![allow(unused)]
 #![recursion_limit = "512"]
 mod commands;
+mod network_server;
 mod db;
 mod helpers;
 mod models;
@@ -90,6 +91,20 @@ use commands::gib_einvoice::{
 use db::DbPool;
 use tauri::Manager;
 
+
+#[tauri::command]
+fn get_local_ip() -> String {
+    use std::net::UdpSocket;
+    if let Ok(socket) = UdpSocket::bind("0.0.0.0:0") {
+        if let Ok(_) = socket.connect("8.8.8.8:80") {
+            if let Ok(addr) = socket.local_addr() {
+                return addr.ip().to_string();
+            }
+        }
+    }
+    "127.0.0.1".to_string()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -143,10 +158,17 @@ pub fn run() {
             app.manage(LocalAiProcess(std::sync::Mutex::new(None)));
             app.manage(commands::local_ai::DownloadState(std::sync::Mutex::new(commands::local_ai::ActiveDownloadState::default())));
             app.manage(commands::whatsapp::WhatsAppProcess(std::sync::Mutex::new(None)));
+            
+            let handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                network_server::start_lan_server(handle).await;
+            });
 
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            get_ceo_dashboard_metrics,
+            get_local_ip,
             // branches
             commands::branches::list_branches,
             // workspaces

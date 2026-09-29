@@ -92,7 +92,7 @@ export function ExpenseForm({
               onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
               required
               disabled={loading}
-              placeholder="0,00"
+              
             />
           </div>
 
@@ -115,7 +115,7 @@ export function ExpenseForm({
               value={formData.note}
               onChange={(e) => setFormData({ ...formData, note: e.target.value })}
               disabled={loading}
-              placeholder="İsteğe bağlı not..."
+              
             />
           </div>
 

@@ -127,7 +127,7 @@ export function TaxForm({
               }
             >
               <SelectTrigger>
-                <SelectValue placeholder="Seçiniz" />
+                <SelectValue  />
               </SelectTrigger>
               <SelectContent>
                 {TAX_TYPES.map((type) => (
@@ -143,7 +143,7 @@ export function TaxForm({
             <Label htmlFor="period">Dönem (örn: 2024-01)</Label>
             <Input
               id="period"
-              placeholder="2024-01"
+              
               value={formData.period}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, period: e.target.value }))
@@ -156,7 +156,7 @@ export function TaxForm({
             <Input
               id="amount"
               type="number"
-              placeholder="0.00"
+              
               step="0.01"
               value={formData.amount}
               onChange={(e) =>
@@ -181,7 +181,7 @@ export function TaxForm({
             <Label htmlFor="notes">Notlar</Label>
             <Textarea
               id="notes"
-              placeholder="Ek notlar..."
+              
               value={formData.notes}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, notes: e.target.value }))
@@ -194,7 +194,7 @@ export function TaxForm({
             <div className="flex gap-2">
               <Input
                 id="receipt_path"
-                placeholder="/path/to/receipt.pdf"
+                
                 value={formData.receipt_path}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, receipt_path: e.target.value }))

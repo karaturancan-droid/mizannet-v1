@@ -46,6 +46,45 @@
 | 📄 **Belge Arşivi & Fiş OCR** | İşletme belgelerinin arşivlenmesi ve fiş/faturaların Yapay Zeka ile (OCR) okunup işlenmesi. |
 | 💬 **Telegram / WhatsApp** | Şirket yönetici ve personellerine özel entegre asistan. (Sadece yetkili olanlar gizli verileri çekebilir). |
 
+## 🖼️ Ekran Görüntüleri
+
+<div align="center">
+
+### Yönetim Paneli
+![Yönetim Paneli](docs/screenshots/dashboard.png)
+
+### Cari Hesaplar
+![Cari Hesaplar](docs/screenshots/cari.png)
+
+### Banka ve Mutabakat
+![Banka ve Mutabakat](docs/screenshots/banka.png)
+
+### Çek ve Senetler
+![Çek ve Senetler](docs/screenshots/cek-senet.png)
+
+</div>
+
+<details>
+<summary><b>📂 Diğer Modüller</b></summary>
+
+<div align="center">
+
+| | |
+|---|---|
+| ![Depo](docs/screenshots/depo.png) | ![Araçlar](docs/screenshots/araclar.png) |
+| **Depo / Stok** | **Araç Filosu** |
+| ![İşçiler](docs/screenshots/isciler.png) | ![Vergi](docs/screenshots/vergi.png) |
+| **İşçi Yönetimi** | **Vergi Takibi** |
+| ![Belgeler](docs/screenshots/belgeler.png) | ![Veri Aktarımı](docs/screenshots/veri-aktarim.png) |
+| **Belge Arşivi** | **Veri Aktarımı** |
+| ![Asistan](docs/screenshots/asistan.png) | ![Ayarlar](docs/screenshots/ayarlar.png) |
+| **Yapay Zeka Asistanı** | **Ayarlar** |
+| ![Takvim](docs/screenshots/takvim.png) | ![Bilgi Bankası](docs/screenshots/rehber.png) |
+| **Takvim** | **Bilgi Bankası** |
+
+</div>
+</details>
+
 ## 🚀 İndirme ve Kurulum
 
 Dağıtıma hazır (v1.0.0) Windows kurulum dosyalarını direkt indirebilirsiniz:

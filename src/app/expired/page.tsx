@@ -106,7 +106,7 @@ export default function ExpiredPage() {
                     value={licenseKey}
                     onChange={e => setLicenseKey(e.target.value.toUpperCase())}
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-zinc-300 focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 transition-all outline-none font-mono text-sm uppercase"
-                    placeholder="MIZANNET-VIP-..."
+                    
                   />
                 </div>
                 <Button 

@@ -110,7 +110,7 @@ export function DocumentList({ documents, loading, error, onEdit, onDelete, onRe
         />
         <Select value={categoryFilter === '' ? 'all' : categoryFilter} onValueChange={(val) => setCategoryFilter(val === 'all' ? '' : val)}>
           <SelectTrigger className="w-full sm:w-48">
-            <SelectValue placeholder="Kategori" />
+            <SelectValue  />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tümü</SelectItem>

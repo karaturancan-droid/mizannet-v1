@@ -41,7 +41,7 @@ export function NotificationFilters({
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
       <Select value={moduleFilter} onValueChange={onModuleChange}>
         <SelectTrigger className="w-full sm:w-48">
-          <SelectValue placeholder="Modül" />
+          <SelectValue  />
         </SelectTrigger>
         <SelectContent>
           {MODULES.map((module) => (
@@ -54,7 +54,7 @@ export function NotificationFilters({
 
       <Select value={statusFilter} onValueChange={onStatusChange}>
         <SelectTrigger className="w-full sm:w-48">
-          <SelectValue placeholder="Durum" />
+          <SelectValue  />
         </SelectTrigger>
         <SelectContent>
           {STATUSES.map((status) => (

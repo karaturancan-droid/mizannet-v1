@@ -132,7 +132,7 @@ export function WorkspaceSwitcher() {
               <input 
                 type="text" 
                 autoFocus
-                placeholder="Örn: ABC İnşaat A.Ş."
+                
                 className="w-full bg-zinc-50 text-zinc-900 rounded-xl px-4 py-3 text-sm outline-none border border-zinc-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all" 
                 value={newWorkspaceName} 
                 onChange={e => setNewWorkspaceName(e.target.value)} 

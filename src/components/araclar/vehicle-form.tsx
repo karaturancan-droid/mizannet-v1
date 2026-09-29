@@ -71,7 +71,7 @@ export function VehicleForm({
                 onChange={(e) => setFormData({ ...formData, plate: e.target.value })}
                 required
                 disabled={loading}
-                placeholder="34ABC1234"
+                
               />
             </div>
             <div>

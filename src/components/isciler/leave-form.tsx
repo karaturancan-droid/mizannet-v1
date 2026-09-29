@@ -136,7 +136,7 @@ export function LeaveForm({
               }
             >
               <SelectTrigger>
-                <SelectValue placeholder="Seçiniz" />
+                <SelectValue  />
               </SelectTrigger>
               <SelectContent>
                 {LEAVE_TYPES.map((type) => (
@@ -153,7 +153,7 @@ export function LeaveForm({
             <Input
               id="days"
               type="number"
-              placeholder="0"
+              
               value={formData.days}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, days: e.target.value }))

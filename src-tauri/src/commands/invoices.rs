@@ -84,7 +84,7 @@ pub fn upload_and_extract_invoice(
     
     // For simplicity, we'll just use the ai directly since we know it's an invoice.
     let analysis_prompt = "Aşağıdaki belge/görsel bir faturadır. \
-        Biz 'Ünaldı Gıda Taşımacılık Madencilik Sanayi ve Ticaret Ltd. Şti.' isimli firmayız. \
+        Biz bu faturaların işlendiği sistemin sahibiyiz. \
         Eğer faturayı biz kesmişsek bu bir Satış Faturasıdır (Cari Alacak/Gelir), bize kesilmişse Alış Faturasıdır (Borç/Gider). \
         Lütfen belgeyi analiz et ve faturanın hangi modüle ait olabileceğini tahmin et (örneğin: 'cari', 'arac', 'depo', 'vergi', 'isci'). \
         Faturanın tipini belirle: biz kestiysek 'sales' (satış), bize kesildiyse 'purchase' (alış). \

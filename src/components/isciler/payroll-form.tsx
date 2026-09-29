@@ -112,7 +112,7 @@ export function PayrollForm({
             <Label htmlFor="period">Dönem (örn: 2024-01) *</Label>
             <Input
               id="period"
-              placeholder="2024-01"
+              
               value={formData.period}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, period: e.target.value }))
@@ -126,7 +126,7 @@ export function PayrollForm({
               <Input
                 id="gross"
                 type="number"
-                placeholder="0.00"
+                
                 step="0.01"
                 value={formData.gross}
                 onChange={(e) =>
@@ -140,7 +140,7 @@ export function PayrollForm({
               <Input
                 id="net"
                 type="number"
-                placeholder="0.00"
+                
                 step="0.01"
                 value={formData.net}
                 onChange={(e) =>
@@ -154,7 +154,7 @@ export function PayrollForm({
               <Input
                 id="deductions"
                 type="number"
-                placeholder="0.00"
+                
                 step="0.01"
                 value={formData.deductions}
                 onChange={(e) =>
@@ -173,7 +173,7 @@ export function PayrollForm({
               }
             >
               <SelectTrigger>
-                <SelectValue placeholder="Durum Seçin" />
+                <SelectValue  />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="taslak">Taslak</SelectItem>
@@ -186,7 +186,7 @@ export function PayrollForm({
             <Label htmlFor="receipt_path">Makbuz Dosya Yolu</Label>
             <Input
               id="receipt_path"
-              placeholder="/path/to/receipt.pdf"
+              
               value={formData.receipt_path}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, receipt_path: e.target.value }))

@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Network, Server, Laptop, CheckCircle2, RefreshCw, MonitorSmartphone } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
+import { invoke } from "@tauri-apps/api/core";
 
 export function NetworkSection() {
   const { settings, setSetting } = useAyarlar();
@@ -13,7 +14,7 @@ export function NetworkSection() {
   
   const [networkMode, setNetworkMode] = useState<"standalone" | "server" | "client">("standalone");
   const [serverIp, setServerIp] = useState("");
-  const [localIp, setLocalIp] = useState("192.168.1.55"); // Mock local IP
+  const [localIp, setLocalIp] = useState("");
   const [isSaved, setIsSaved] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [discoveredDevices, setDiscoveredDevices] = useState<{name: string, ip: string, paired: boolean}[]>([]);
@@ -25,6 +26,7 @@ export function NetworkSection() {
     if (settings.server_ip) {
       setServerIp(settings.server_ip);
     }
+    invoke("get_local_ip").then((ip) => setLocalIp(ip as string)).catch(console.error);
   }, [settings]);
 
   const handleSave = async () => {
@@ -54,10 +56,7 @@ export function NetworkSection() {
     setDiscoveredDevices([]);
     // Sahte (Mock) ağ taraması simülasyonu
     setTimeout(() => {
-      setDiscoveredDevices([
-        { name: "Kasa-PC (Ana Makine)", ip: "192.168.1.55:3030", paired: false },
-        { name: "Muhasebe-Laptop", ip: "192.168.1.120:3030", paired: false }
-      ]);
+      setDiscoveredDevices([]);
       setIsScanning(false);
     }, 2000);
   };
@@ -199,7 +198,7 @@ export function NetworkSection() {
               <Label htmlFor="serverIp" className="text-emerald-800 font-semibold">Veya Manuel IP Adresi Girin</Label>
               <Input 
                 id="serverIp" 
-                placeholder="192.168.x.x:3030" 
+                 
                 value={serverIp}
                 onChange={(e) => setServerIp(e.target.value)}
                 className="max-w-xs border-emerald-200 focus-visible:ring-emerald-500"

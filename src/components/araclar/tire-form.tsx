@@ -62,7 +62,7 @@ export function TireForm({
               value={formData.position}
               onChange={(e) => setFormData({ ...formData, position: e.target.value })}
               disabled={loading}
-              placeholder="Ön Sol, Arka Sağ, vb."
+              
             />
           </div>
 
@@ -73,7 +73,7 @@ export function TireForm({
               value={formData.dot_code}
               onChange={(e) => setFormData({ ...formData, dot_code: e.target.value })}
               disabled={loading}
-              placeholder="DOT kodu"
+              
             />
           </div>
 
@@ -86,7 +86,7 @@ export function TireForm({
               value={formData.tread_depth}
               onChange={(e) => setFormData({ ...formData, tread_depth: e.target.value })}
               disabled={loading}
-              placeholder="0,0"
+              
             />
           </div>
 

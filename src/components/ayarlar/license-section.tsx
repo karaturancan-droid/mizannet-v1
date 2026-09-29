@@ -102,7 +102,7 @@ export function LicenseSection() {
                 <Input 
                   value={licenseKey}
                   onChange={e => setLicenseKey(e.target.value.toUpperCase())}
-                  placeholder="MIZANNET-VIP-..." 
+                   
                   className="pl-9 font-mono uppercase" 
                 />
               </div>

@@ -113,11 +113,11 @@ export default function CekSenetPage() {
           <form onSubmit={handleAdd} className="space-y-4">
             <div className="space-y-2">
               <Label>Evrak Tipi</Label>
-              <Input name="type" required placeholder="Müşteri Çeki, Alınan Senet vb." />
+              <Input name="type" required  />
             </div>
             <div className="space-y-2">
               <Label>Tutar (₺)</Label>
-              <Input name="amount" required placeholder="10.000,00 ₺" />
+              <Input name="amount" required  />
             </div>
             <div className="space-y-2">
               <Label>Vade Tarihi</Label>

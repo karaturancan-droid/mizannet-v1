@@ -135,7 +135,7 @@ export function DocumentForm({ document, onSubmit, onCancel, isLoading = false }
               id="title"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="Belge başlığı"
+              
               disabled={isLoading}
             />
           </div>
@@ -149,7 +149,7 @@ export function DocumentForm({ document, onSubmit, onCancel, isLoading = false }
                 disabled={isLoading}
               >
                 <SelectTrigger id="category">
-                  <SelectValue placeholder="Seçiniz" />
+                  <SelectValue  />
                 </SelectTrigger>
                 <SelectContent>
                   {CATEGORIES.map((cat) => (
@@ -169,7 +169,7 @@ export function DocumentForm({ document, onSubmit, onCancel, isLoading = false }
                 disabled={isLoading}
               >
                 <SelectTrigger id="file_type">
-                  <SelectValue placeholder="Seçiniz" />
+                  <SelectValue  />
                 </SelectTrigger>
                 <SelectContent>
                   {FILE_TYPES.map((type) => (
@@ -225,7 +225,7 @@ export function DocumentForm({ document, onSubmit, onCancel, isLoading = false }
                 id="related_type"
                 value={formData.related_type}
                 onChange={(e) => setFormData({ ...formData, related_type: e.target.value })}
-                placeholder="Örn: firma, araç"
+                
                 disabled={isLoading}
               />
             </div>
@@ -236,7 +236,7 @@ export function DocumentForm({ document, onSubmit, onCancel, isLoading = false }
                 id="related_id"
                 value={formData.related_id}
                 onChange={(e) => setFormData({ ...formData, related_id: e.target.value })}
-                placeholder="ID"
+                
                 disabled={isLoading}
               />
             </div>
@@ -259,7 +259,7 @@ export function DocumentForm({ document, onSubmit, onCancel, isLoading = false }
               id="tags"
               value={formData.tags}
               onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-              placeholder="etiket1, etiket2, etiket3"
+              
               disabled={isLoading}
             />
           </div>
@@ -270,7 +270,7 @@ export function DocumentForm({ document, onSubmit, onCancel, isLoading = false }
               id="notes"
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Ek notlar..."
+              
               disabled={isLoading}
               rows={3}
             />

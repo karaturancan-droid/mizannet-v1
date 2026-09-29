@@ -91,7 +91,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-zinc-200 focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 transition-all outline-none"
-                placeholder="ornek@sirketiniz.com"
+                
                 required
               />
             </div>
@@ -106,13 +106,13 @@ export default function LoginPage() {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-zinc-200 focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 transition-all outline-none"
-                placeholder="••••••••"
+                
                 required
               />
             </div>
           </div>
 
-          <Button onClick={() => alert("Bu modül/özellik henüz yapım aşamasındadır. Yakında aktif olacaktır.")} 
+          <Button 
             type="submit" 
             disabled={loading}
             className="w-full py-6 mt-4 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-base font-medium flex items-center justify-center gap-2"

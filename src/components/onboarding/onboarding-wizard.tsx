@@ -89,7 +89,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   <Label htmlFor="companyName">Şirket/Firma Adı <span className="text-red-500">*</span></Label>
                   <Input 
                     id="companyName" 
-                    placeholder="Örn: Ünaldı Madencilik Ltd. Şti." 
+                     
                     value={companyName} 
                     onChange={e => setCompanyName(e.target.value)}
                     autoFocus
@@ -100,7 +100,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   <Label htmlFor="contactPerson">Yetkili Adı Soyadı</Label>
                   <Input 
                     id="contactPerson" 
-                    placeholder="Örn: Ahmet Ünaldı" 
+                     
                     value={contactPerson} 
                     onChange={e => setContactPerson(e.target.value)}
                   />
@@ -110,7 +110,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   <Label htmlFor="taxNo">Vergi Kimlik No / TCKN</Label>
                   <Input 
                     id="taxNo" 
-                    placeholder="10 Haneli VKN" 
+                     
                     value={taxNo} 
                     onChange={e => setTaxNo(e.target.value)}
                   />
