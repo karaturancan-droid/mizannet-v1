@@ -1,28 +1,73 @@
 "use client";
 
-import { useState } from "react";
-import { Landmark, ArrowDownLeft, ArrowUpRight, Download, Plus } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Landmark, ArrowDownLeft, ArrowUpRight, Download, Plus, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
+import { callBackend } from "@/lib/tauri";
+import { useToast } from "@/components/ui/toast";
+import { formatCurrencyTRY } from "@/lib/format";
 
 export default function BankaPage() {
   const [showAddBank, setShowAddBank] = useState(false);
-  const [banks, setBanks] = useState<{name: string, iban: string, balance: string}[]>([]);
+  const [showEditBalance, setShowEditBalance] = useState<{id: string, name: string, balance: number} | null>(null);
+  const [banks, setBanks] = useState<{id: string, name: string, account_type: string, currency: string, iban: string | null, opening_balance: number}[]>([]);
+  const { addToast } = useToast();
 
-  const handleAddBank = (e: any) => {
+  const loadAccounts = async () => {
+    try {
+      const accs = await callBackend<any[]>('list_accounts', {});
+      setBanks(accs);
+    } catch (e: any) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    loadAccounts();
+  }, []);
+
+  const handleAddBank = async (e: any) => {
     e.preventDefault();
     const formData = new FormData(e.target);
-    const newBank = {
-      name: formData.get('bankName') as string,
-      iban: formData.get('iban') as string,
-      balance: formData.get('balance') as string || "0,00 ₺"
-    };
-    setBanks([...banks, newBank]);
-    setShowAddBank(false);
+    const balanceStr = formData.get('balance') as string;
+    const balance = parseFloat(balanceStr.replace(/[^0-9,-]+/g, "").replace(",", ".")) || 0;
+    
+    try {
+      await callBackend('create_account', {
+        name: formData.get('bankName') as string,
+        account_type: formData.get('accountType') as string || 'banka',
+        currency: 'TRY',
+        iban: formData.get('iban') as string,
+        opening_balance: balance
+      });
+      setShowAddBank(false);
+      loadAccounts();
+    } catch(e: any) {
+      alert("Hata: " + e.toString());
+    }
+  };
+
+  const handleEditBalance = async (e: any) => {
+    e.preventDefault();
+    if(!showEditBalance) return;
+    const formData = new FormData(e.target);
+    const balanceStr = formData.get('balance') as string;
+    const balance = parseFloat(balanceStr.replace(/[^0-9,-]+/g, "").replace(",", ".")) || 0;
+    
+    try {
+      await callBackend('update_account_balance', {
+        id: showEditBalance.id,
+        opening_balance: balance
+      });
+      setShowEditBalance(null);
+      loadAccounts();
+    } catch(e: any) {
+      alert("Hata: " + e.toString());
+    }
   };
 
   return (
@@ -75,10 +120,15 @@ export default function BankaPage() {
                       </div>
                       <div>
                         <div className="font-bold">{b.name}</div>
-                        <div className="text-xs text-muted-foreground">{b.iban}</div>
+                        <div className="text-xs text-muted-foreground">{b.iban || b.account_type.toUpperCase()}</div>
                       </div>
                     </div>
-                    <div className="font-bold text-lg text-emerald-700">{b.balance}</div>
+                    <div className="flex items-center gap-4">
+                      <div className="font-bold text-lg text-emerald-700">{formatCurrencyTRY(b.opening_balance)}</div>
+                      <Button variant="ghost" size="sm" onClick={() => setShowEditBalance({id: b.id, name: b.name, balance: b.opening_balance})}>
+                        <Edit className="w-4 h-4 text-zinc-500" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -110,20 +160,49 @@ export default function BankaPage() {
           </DialogHeader>
           <form onSubmit={handleAddBank} className="space-y-4">
             <div className="space-y-2">
-              <Label>Banka Adı (Örn: Garanti BBVA)</Label>
+              <Label>Hesap Türü</Label>
+              <select name="accountType" className="w-full h-10 px-3 py-2 border rounded-md" defaultValue="banka">
+                <option value="banka">Banka Hesabı</option>
+                <option value="kasa">Nakit Kasa</option>
+                <option value="pos">POS / Sanal POS</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label>Banka / Kasa Adı (Örn: Merkez Kasa, Garanti BBVA)</Label>
               <Input name="bankName" required  />
             </div>
             <div className="space-y-2">
-              <Label>IBAN Numarası</Label>
-              <Input name="iban" required  />
+              <Label>IBAN Numarası (Kasa ise boş bırakın)</Label>
+              <Input name="iban" />
             </div>
             <div className="space-y-2">
-              <Label>Açılış Bakiyesi (₺)</Label>
-              <Input name="balance" type="text"  defaultValue="0,00 ₺" />
+              <Label>Mevcut Bakiye (₺)</Label>
+              <Input name="balance" type="text"  defaultValue="0,00" />
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowAddBank(false)}>İptal</Button>
               <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white">Hesabı Kaydet</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!showEditBalance} onOpenChange={(open) => !open && setShowEditBalance(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{showEditBalance?.name} Bakiyesini Güncelle</DialogTitle>
+            <DialogDescription>
+              Bu kasanın / bankanın mevcut güncel bakiyesini manuel olarak buradan girebilirsiniz.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEditBalance} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Güncel Bakiye (₺)</Label>
+              <Input name="balance" type="text" defaultValue={showEditBalance?.balance} required />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setShowEditBalance(null)}>İptal</Button>
+              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white">Güncelle</Button>
             </DialogFooter>
           </form>
         </DialogContent>

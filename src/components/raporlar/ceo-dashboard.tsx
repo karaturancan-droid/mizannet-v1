@@ -58,25 +58,10 @@ Format: Profesyonel, ciddi ama kolay okunabilir (Markdown destekli, kalın yazı
       // but let's just use `callBackend('analyze_file', ...)` if there's no direct prompt endpoint,
       // wait, `send_message_to_assistant` creates a chat. Let's check `use-asistan` logic.
       
-      const response = await fetch('http://localhost:11434/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: localStorage.getItem('madenapp_ai_model') || 'llama3:8b', // Falback
-          prompt: prompt,
-          stream: false
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setAiReport(data.response);
-      } else {
-        throw new Error("Yapay Zeka servisi yanıt vermedi.");
-      }
-
+      const response = await callBackend<string>('generate_cfo_report', { prompt });
+      setAiReport(response);
     } catch (e: any) {
-      alert("Yapay Zeka Hatası");
+      alert("Yapay Zeka Hatası: " + (e.message || e));
     } finally {
       setGeneratingAI(false);
     }

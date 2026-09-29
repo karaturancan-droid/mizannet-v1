@@ -22,6 +22,7 @@ interface CompanyDetailsProps {
   onChangeYearFilter: (year: number | null) => void;
   onEditCompany: () => void;
   onDeleteCompany: () => void;
+  onPayDebt: () => void;
   onAddLedgerEntry: () => void;
   onEditLedgerEntry: (entry: LedgerEntry) => void;
   onDeleteLedgerEntry: (id: string) => void;
@@ -37,6 +38,7 @@ export function CompanyDetails({
   onChangeYearFilter,
   onEditCompany,
   onDeleteCompany,
+  onPayDebt,
   onAddLedgerEntry,
   onEditLedgerEntry,
   onDeleteLedgerEntry,
@@ -141,6 +143,16 @@ export function CompanyDetails({
                 Düzenle
               </Button>
               <Button
+                variant="outline"
+                size="sm"
+                className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-800"
+                onClick={onPayDebt}
+                disabled={loading}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+                Ödeme Ekle
+              </Button>
+              <Button
                 variant="destructive"
                 size="sm"
                 onClick={onDeleteCompany}
@@ -178,7 +190,7 @@ export function CompanyDetails({
 
       {/* Özet Kartları */}
       {ledgerSummary && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <Card>
             <CardContent className="pt-6">
               <p className="text-xs text-gray-600 mb-1">Toplam Alacağımız (Bize Borcu)</p>
@@ -192,6 +204,17 @@ export function CompanyDetails({
               <p className="text-xs text-gray-600 mb-1">Toplam Borcumuz (Bizden Alacağı)</p>
               <p className="text-xl font-bold text-red-600">
                 {formatCurrencyTRY(ledgerSummary.total_credit)}
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-xs text-gray-600 mb-1">Net Bakiye</p>
+              <p className={`text-xl font-bold ${ledgerSummary.net > 0 ? 'text-emerald-600' : ledgerSummary.net < 0 ? 'text-red-600' : 'text-gray-600'}`}>
+                {formatCurrencyTRY(Math.abs(ledgerSummary.net))}
+                <span className="text-sm font-normal ml-2">
+                  {ledgerSummary.net > 0 ? '(Bize Borçlu)' : ledgerSummary.net < 0 ? '(Biz Borçluyuz)' : ''}
+                </span>
               </p>
             </CardContent>
           </Card>

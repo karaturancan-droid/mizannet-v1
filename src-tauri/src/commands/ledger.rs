@@ -76,6 +76,41 @@ pub fn create_ledger_entry(
 }
 
 #[tauri::command]
+pub fn pay_company_debt(
+    pool: State<DbPool>,
+    company_id: String,
+    account_id: String,
+    date: String,
+    amount: f64,
+    description: Option<String>,
+) -> Result<(), String> {
+    let mut conn = pool.get_conn().map_err(|e| e.to_string())?;
+    let tx = conn.transaction().map_err(|e| e.to_string())?;
+
+    let ledger_id = new_id();
+    let statement_id = new_id();
+    let created_at = now_iso();
+    let desc = description.unwrap_or_else(|| "Firma Ödemesi".to_string());
+
+    tx.execute(
+        "INSERT INTO ledger_entries (id, company_id, date, document_no, description, debit, credit, running_balance, entry_type, created_at) VALUES (?1, ?2, ?3, '', ?4, ?5, 0, 0, 'payment', ?6)",
+        rusqlite::params![ledger_id, company_id, date, desc, amount, created_at],
+    )
+    .map_err(|e| e.to_string())?;
+
+    recompute_running_balances(&tx, &company_id)?;
+
+    tx.execute(
+        "INSERT INTO bank_statements (id, account_id, date, description, amount, balance, status, matched_company_id, created_at) VALUES (?1, ?2, ?3, ?4, ?5, 0, 'imported', ?6, ?7)",
+        rusqlite::params![statement_id, account_id, date, desc, -amount, company_id, created_at],
+    )
+    .map_err(|e| e.to_string())?;
+
+    tx.commit().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
 pub fn update_ledger_entry(
     pool: State<DbPool>,
     id: String,

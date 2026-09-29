@@ -3,9 +3,15 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CeoDashboard } from "@/components/raporlar/ceo-dashboard";
+import { MaliMusavirRaporu } from "@/components/raporlar/mali-musavir";
+import { ExcelView } from "@/components/dashboard/excel-view";
+import { StockSummaryCards } from "@/components/depo/stock-summary";
 import { Calculator, FileText, PieChart } from "lucide-react";
+import { useDepo } from "@/hooks/use-depo";
 
 export default function RaporlarPage() {
+  const { stockSummary, loading } = useDepo();
+
   return (
     <div className="space-y-6">
       <div>
@@ -34,23 +40,22 @@ export default function RaporlarPage() {
         </TabsContent>
 
         <TabsContent value="mali-musavir">
-          <div className="p-8 text-center text-muted-foreground border rounded-lg bg-slate-50">
-            Mali Müşavir (Aylık Z Raporu) modülü yakında aktif olacaktır.
-          </div>
+          <MaliMusavirRaporu />
         </TabsContent>
 
         <TabsContent value="cari-ekstre">
-          <div className="p-8 text-center text-muted-foreground border rounded-lg bg-slate-50">
-            Cari Ekstre detaylı raporları yakında aktif olacaktır.
+          <div className="bg-white rounded-lg shadow-sm border p-4">
+            <ExcelView />
           </div>
         </TabsContent>
 
         <TabsContent value="stok">
-          <div className="p-8 text-center text-muted-foreground border rounded-lg bg-slate-50">
-            Stok & Envanter raporları yakında aktif olacaktır.
+          <div className="bg-white rounded-lg shadow-sm border p-4">
+            <StockSummaryCards summary={stockSummary} loading={loading} />
           </div>
         </TabsContent>
       </Tabs>
     </div>
   );
 }
+

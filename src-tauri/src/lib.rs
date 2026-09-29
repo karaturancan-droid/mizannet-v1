@@ -17,7 +17,7 @@ use commands::asistan::{
     library_upload_document, library_list_documents, library_delete_document,
 };
 use commands::backup::{export_backup, import_backup};
-use commands::ai_cfo::get_ceo_dashboard_metrics;
+use commands::ai_cfo::{get_ceo_dashboard_metrics, generate_cfo_report};
 use commands::companies::{create_company, delete_company, get_company, list_companies, update_company};
 use commands::data_location::{get_data_location, reset_data_location, set_data_location};
 use commands::file_analysis::{
@@ -34,7 +34,7 @@ use commands::invoices::{
 };
 use commands::ledger::{
     create_ledger_entry, delete_ledger_entry, get_ledger_summary, list_ledger_entries,
-    update_ledger_entry,
+    update_ledger_entry, pay_company_debt,
 };
 use commands::notifications::{list_notifications, refresh_notifications, update_notification_status, update_notification_date};
 use commands::products::{
@@ -77,7 +77,7 @@ use commands::auto_messenger::{
     web_login, web_verify, web_activate_license, web_logout,
 };
 use commands::bank_reconciliation::{
-    list_accounts, create_account, delete_account, get_account_balance,
+    list_accounts, create_account, delete_account, get_account_balance, update_account_balance,
     import_bank_statement, list_bank_statement_rows, auto_match_bank_statement,
     confirm_bank_statement_row, ignore_bank_statement_row,
 };
@@ -168,6 +168,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             get_ceo_dashboard_metrics,
+            generate_cfo_report,
             get_local_ip,
             // branches
             commands::branches::list_branches,
@@ -188,6 +189,7 @@ pub fn run() {
             delete_ledger_entry,
             list_ledger_entries,
             get_ledger_summary,
+            pay_company_debt,
             // recycle bin
             list_recycle_bin,
             restore_from_recycle_bin,
@@ -350,6 +352,7 @@ pub fn run() {
             create_account,
             delete_account,
             get_account_balance,
+            update_account_balance,
             import_bank_statement,
             list_bank_statement_rows,
             auto_match_bank_statement,

@@ -87,6 +87,14 @@ pub fn delete_account(pool: State<DbPool>, id: String) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+pub fn update_account_balance(pool: State<DbPool>, id: String, opening_balance: f64) -> Result<(), String> {
+    let conn = pool.get_conn().map_err(|e| e.to_string())?;
+    conn.execute("UPDATE accounts SET opening_balance = ?1 WHERE id = ?2", rusqlite::params![opening_balance, id])
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 /// Hesap bakiyesi: açılış bakiyesi + gelir/gider hareketleri.
 #[tauri::command]
 pub fn get_account_balance(pool: State<DbPool>, account_id: String) -> Result<f64, String> {

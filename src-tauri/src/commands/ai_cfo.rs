@@ -86,3 +86,17 @@ pub fn get_ceo_dashboard_metrics(pool: State<DbPool>) -> Result<CeoMetrics, Stri
         recent_large_expenses: expenses,
     })
 }
+
+#[tauri::command]
+pub fn generate_cfo_report(prompt: String, pool: State<DbPool>) -> Result<String, String> {
+    use crate::ai::{ai_chat, ChatMessage};
+    
+    let messages = vec![
+        ChatMessage {
+            role: "user".to_string(),
+            content: prompt,
+        }
+    ];
+    
+    ai_chat(&pool, &messages)
+}

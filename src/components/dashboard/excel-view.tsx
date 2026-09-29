@@ -8,6 +8,8 @@ import { exportToExcel } from '@/lib/excel';
 import { useToast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
+import { callBackend } from '@/lib/tauri';
+import { useBranch } from '@/contexts/BranchContext';
 
 export function ExcelView() {
   const {
@@ -17,6 +19,8 @@ export function ExcelView() {
     selectCompany,
     loading
   } = useCari();
+  
+  const { activeBranchId } = useBranch();
 
   useEffect(() => {
     // If no company is selected and we have companies, select the first one
@@ -36,8 +40,11 @@ export function ExcelView() {
       // Loop through all companies to fetch their ledgers
       for (const company of companies) {
         try {
-          const { invoke } = await import('@tauri-apps/api/core');
-          const entries: any[] = await invoke('list_ledger_entries', { company_id: company.id });
+          const entries: any[] = await callBackend('list_ledger_entries', { 
+            company_id: company.id,
+            year_filter: null,
+            branch_id: activeBranchId
+          });
           
           if (entries && entries.length > 0) {
             hasData = true;

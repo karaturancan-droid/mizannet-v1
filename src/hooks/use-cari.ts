@@ -258,6 +258,36 @@ export function useCari() {
     loadCompanies();
   }, [loadCompanies]);
 
+  // Borç Öde
+  const payCompanyDebt = useCallback(
+    async (
+      company_id: string,
+      account_id: string,
+      date: string,
+      amount: number,
+      description?: string
+    ) => {
+      setError(null);
+      try {
+        await callBackend('pay_company_debt', {
+          company_id,
+          account_id,
+          date,
+          amount,
+          description,
+        });
+        if (selectedCompanyId === company_id) {
+          await loadLedgerData(company_id, yearFilter);
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Ödeme yapılamadı';
+        setError(message);
+        throw err;
+      }
+    },
+    [selectedCompanyId, yearFilter, loadLedgerData]
+  );
+
   return {
     companies,
     selectedCompanyId,
@@ -274,6 +304,7 @@ export function useCari() {
     createLedgerEntry,
     updateLedgerEntry,
     deleteLedgerEntry,
+    payCompanyDebt,
     loadCompanies,
   };
 }

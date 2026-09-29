@@ -11,6 +11,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useToast } from '@/components/ui/toast';
 import { exportToExcel } from '@/lib/excel';
 import { formatDateTR } from '@/lib/format';
+import { PaymentForm } from '@/components/cari/payment-form';
 
 function CariContent() {
   const searchParams = useSearchParams();
@@ -21,6 +22,7 @@ function CariContent() {
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [ledgerFormOpen, setLedgerFormOpen] = useState(false);
   const [editingLedgerEntry, setEditingLedgerEntry] = useState<LedgerEntry | null>(null);
+  const [paymentFormOpen, setPaymentFormOpen] = useState(false);
 
   // Confirm dialog state
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -156,6 +158,20 @@ function CariContent() {
     [editingLedgerEntry, cari, addToast]
   );
 
+  const handleSubmitPaymentForm = useCallback(
+    async (data: { account_id: string; date: string; amount: number; description?: string }) => {
+      if (!cari.selectedCompanyId) return;
+      try {
+        await cari.payCompanyDebt(cari.selectedCompanyId, data.account_id, data.date, data.amount, data.description);
+        addToast({ title: 'Ödeme başarıyla eklendi', variant: 'success' });
+        setPaymentFormOpen(false);
+      } catch (error) {
+        addToast({ title: 'Hata', description: 'Ödeme eklenirken hata oluştu', variant: 'destructive' });
+      }
+    },
+    [cari, addToast]
+  );
+
   // Excel Export
   const handleExportExcel = useCallback(async () => {
     if (!selectedCompany || cari.ledgerEntries.length === 0) return;
@@ -211,6 +227,7 @@ function CariContent() {
           onChangeYearFilter={cari.changeYearFilter}
           onEditCompany={handleEditCompany}
           onDeleteCompany={handleDeleteCompany}
+          onPayDebt={() => setPaymentFormOpen(true)}
           onAddLedgerEntry={handleAddLedgerEntry}
           onEditLedgerEntry={handleEditLedgerEntry}
           onDeleteLedgerEntry={handleDeleteLedgerEntry}
@@ -234,6 +251,13 @@ function CariContent() {
         onOpenChange={setLedgerFormOpen}
         onSubmit={handleSubmitLedgerForm}
         initialData={editingLedgerEntry || undefined}
+        isLoading={cari.loading}
+      />
+
+      <PaymentForm
+        open={paymentFormOpen}
+        onOpenChange={setPaymentFormOpen}
+        onSubmit={handleSubmitPaymentForm}
         isLoading={cari.loading}
       />
 
